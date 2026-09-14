@@ -81,6 +81,29 @@ File nén được kiểm tra header, codebook, số bit, padding và tần su�
 Chưa có checksum nên không phát hiện được mọi thay đổi giữ nguyên tần suất byte.
 
 
+## Đọc phần API
+
+Trong `api/main.py`, bắt đầu từ `compress_file` và `decompress_file` ở cuối file.
+Mỗi hàm tương ứng với một địa chỉ API và thực hiện lần lượt:
+
+1. Nhận file do trình duyệt gửi lên bằng trường `file` trong form.
+2. Gọi `read_uploaded_file` để đọc dữ liệu và kiểm tra giới hạn.
+3. Gọi thuật toán Huffman để nén hoặc giải nén.
+4. Gọi `download_response` để trả dữ liệu và tên file tải xuống.
+
+API chỉ phụ trách nhận/trả file; thuật toán nằm trong thư mục `core/`.
+`UploadFile` là file nhận từ người dùng, còn `Response` là phản hồi gửi về.
+Body của phản hồi chứa dữ liệu nhị phân. Header `Content-Disposition` đặt tên
+file tải xuống; các header `X-...` chứa số liệu để giao diện hiển thị.
+
+`await` chờ một công việc hoàn thành. `run_in_threadpool` chạy Huffman
+trong thread, giúp server không thực hiện thuật toán trực tiếp trên event loop.
+`lifespan` chuẩn bị giới hạn số tác vụ khi server khởi động;
+`async with` giữ một vị trí xử lý và tự trả lại vị trí đó khi kết thúc.
+
+Muốn đổi giới hạn, sửa `MAX_FILE_SIZE` ở đầu file rồi khởi động lại API.
+Thông báo dung lượng được tính từ cấu hình, không ghi cố định trong từng hàm.
+
 ## Đọc phần thuật toán
 
 Trong `core/huffman.py`, đọc theo thứ tự:
