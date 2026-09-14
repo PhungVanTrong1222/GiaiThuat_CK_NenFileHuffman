@@ -32,6 +32,26 @@ class ApiTests(unittest.TestCase):
             {"status": "ok", "algorithms": ["huffman"]},
         )
 
+    def test_web_page_and_assets(self):
+        """Kiểm tra trang chính, CSS và JavaScript được phục vụ cùng API."""
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('id="file-form"', response.text)
+        for path in ["/static/style.css", "/static/script.js"]:
+            asset = self.client.get(path)
+            self.assertEqual(asset.status_code, 200)
+        # Thư mục static chỉ chứa giao diện, không công khai mã nguồn backend.
+        self.assertEqual(self.client.get("/static/core/huffman.py").status_code, 404)
+
+    def test_web_configuration(self):
+        """Giao diện nhận đúng giới hạn đang dùng ở backend."""
+        from api.main import MAX_FILE_SIZE, MAX_COMPRESSED_SIZE
+
+        response = self.client.get("/api/config")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["max_file_size"], MAX_FILE_SIZE)
+        self.assertEqual(response.json()["max_compressed_size"], MAX_COMPRESSED_SIZE)
+
     def test_compress_and_decompress(self):
         """Gửi file tiếng Việt qua API nén và giải nén.
 

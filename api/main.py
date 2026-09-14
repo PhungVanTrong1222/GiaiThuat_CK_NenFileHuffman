@@ -10,7 +10,8 @@ from pathlib import Path
 from threading import BoundedSemaphore
 
 from fastapi import FastAPI, HTTPException, UploadFile
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from core import auto_decompress, get_compressor, list_algorithms
 from core.file_format import HEADER_SIZE, unpack_header
@@ -32,6 +33,26 @@ app = FastAPI(
     description="API nén và giải nén file bằng thuật toán Huffman.",
     version="1.0.0",
 )
+
+
+# Chỉ phục vụ thư mục web, không công khai mã Python hay dữ liệu dự án.
+WEB_DIRECTORY = Path(__file__).resolve().parent.parent / "web"
+app.mount("/static", StaticFiles(directory=WEB_DIRECTORY), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def home_page():
+    """Trả trang HTML chính; trình duyệt tải CSS và JavaScript từ /static."""
+    return FileResponse(WEB_DIRECTORY / "index.html")
+
+
+@app.get("/api/config")
+def application_config():
+    """Cho giao diện biết giới hạn file hiện tại, tính bằng byte."""
+    return {
+        "max_file_size": MAX_FILE_SIZE,
+        "max_compressed_size": MAX_COMPRESSED_SIZE,
+    }
 
 
 def safe_filename(filename, default_name):

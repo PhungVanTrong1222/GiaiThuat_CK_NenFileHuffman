@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<!-- Trang chính: chọn chế độ, gửi file và hiển thị kết quả nén/giải nén. -->
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f7f6f2">
+  <title>ShrinkIT — Nén file Huffman</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/script.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="ShrinkIT trang chủ"><span class="brand-mark">S<span>↓</span></span>ShrinkIT<span class="brand-dot">.</span></a>
+    <a class="nav-link" href="#how-it-works">Cách hoạt động <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main>
+    <section class="intro">
+      <p class="eyebrow"><span></span> HUFFMAN CODING / NÉN KHÔNG MẤT MÁT</p>
+      <h1>Nhẹ hơn.<br><span>Vẹn nguyên dữ liệu.</span></h1>
+      <p class="intro-copy">Nén file bằng thuật toán Huffman và khôi phục lại nội dung gốc.<br class="desktop-break"> Một nơi đơn giản để bắt đầu với dữ liệu của bạn.</p>
+    </section>
+
+    <section class="workspace" aria-label="Công cụ nén và giải nén">
+      <!-- Cột nhập liệu: nút đổi chế độ, file input và nút gửi lên API. -->
+      <div class="upload-panel">
+        <div class="mode-switch" role="group" aria-label="Chọn chức năng">
+          <button id="compress-mode" class="mode-button active" type="button" aria-pressed="true">Nén file <span aria-hidden="true">↘</span></button>
+          <button id="decompress-mode" class="mode-button" type="button" aria-pressed="false">Giải nén <span aria-hidden="true">↗</span></button>
+        </div>
+        <form id="file-form">
+          <div class="section-heading"><h2 id="input-title">Chọn file cần nén</h2><span class="step-label">BƯỚC 01</span></div>
+          <label class="drop-zone" id="drop-zone" for="file-input">
+            <span class="file-icon" aria-hidden="true">↑</span>
+            <strong>Kéo thả file vào đây</strong>
+            <span>hoặc <span class="browse-text">chọn từ máy của bạn</span></span>
+            <span class="file-hint" id="file-hint">Đang lấy giới hạn dung lượng…</span>
+            <input type="file" id="file-input" aria-label="Chọn file cần xử lý" disabled>
+          </label>
+          <div class="selected-file" id="selected-file" hidden>
+            <span class="small-file-icon" aria-hidden="true">≡</span>
+            <div class="file-details"><strong id="selected-name"></strong><span id="selected-size"></span></div>
+            <button class="remove-button" id="remove-file" type="button" aria-label="Bỏ file đã chọn">×</button>
+          </div>
+          <button class="primary-button" id="submit-button" type="submit" disabled><span id="submit-label">Nén file</span><span aria-hidden="true">→</span></button>
+          <p class="status-message" id="status-message" role="status" aria-live="polite">Đang kết nối đến ứng dụng…</p>
+        </form>
+      </div>
+
+      <!-- Cột kết quả chỉ có số liệu thật sau khi API xử lý thành công. -->
+      <aside class="result-panel" aria-labelledby="result-title">
+        <div class="section-heading"><h2 id="result-title">Kết quả của bạn</h2><span class="step-label">BƯỚC 02</span></div>
+        <div class="empty-result" id="empty-result">
+          <div class="result-art" aria-hidden="true"><span class="paper-back"></span><span class="paper-front">↓</span></div>
+          <h3>Ít dung lượng hơn.<br>Thêm không gian lưu trữ.</h3>
+          <p id="empty-description">Chọn một file để xem dung lượng<br>và kết quả sau khi nén.</p>
+        </div>
+        <div id="result-content" hidden>
+          <p class="success-label">✓ XỬ LÝ HOÀN TẤT</p>
+          <h3 class="result-filename" id="result-filename"></h3>
+          <dl class="metrics">
+            <div><dt>Dung lượng đầu vào</dt><dd id="input-size"></dd></div>
+            <div><dt>Dung lượng kết quả</dt><dd id="output-size"></dd></div>
+            <div><dt id="ratio-label">Giảm dung lượng</dt><dd id="ratio-value"></dd></div>
+            <div><dt>Tổng thời gian chờ</dt><dd id="elapsed-time"></dd></div>
+          </dl>
+          <p class="result-note" id="result-note"></p>
+          <a class="download-button" id="download-link">Tải file kết quả <span aria-hidden="true">↓</span></a>
+        </div>
+        <div class="panel-footnote"><span aria-hidden="true">◈</span> Nén và giải nén bằng Huffman</div>
+      </aside>
+    </section>
+
+    <section class="how-it-works" id="how-it-works">
+      <div class="guide-heading"><p class="eyebrow">TỪ FILE GỐC ĐẾN FILE NÉN</p><h2>Ba bước, một kết quả.</h2></div>
+      <div class="guide-grid">
+        <article><span class="guide-number">01</span><h3>Chọn dữ liệu</h3><p>Thử với văn bản, CSV hoặc file log. Dữ liệu có nhiều byte lặp thường nén hiệu quả hơn.</p></article>
+        <article><span class="guide-number">02</span><h3>Mã hóa Huffman</h3><p>Byte xuất hiện nhiều được gán mã ngắn hơn. Bảng tần suất được lưu cùng dữ liệu nén.</p></article>
+        <article><span class="guide-number">03</span><h3>Tải về và khôi phục</h3><p>Nhận file .bin sau khi nén. Chọn Giải nén để khôi phục file do ShrinkIT tạo.</p></article>
+      </div>
+    </section>
+    <p class="format-note">Lưu ý: file nhỏ hoặc dữ liệu đã nén như ZIP, JPG có thể lớn hơn sau khi nén Huffman. ShrinkIT không giải nén ZIP hay RAR.</p>
+  </main>
+  <footer><span class="brand-footer">ShrinkIT.</span><span>Đồ án thuật toán · Huffman Coding</span></footer>
+</body>
+</html>

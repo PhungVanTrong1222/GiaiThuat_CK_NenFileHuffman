@@ -10,6 +10,7 @@ có header riêng và khôi phục lại chính xác dữ liệu ban đầu.
 ShrinkIT/
 ├── core/               # Cài đặt thuật toán Huffman và định dạng file
 ├── api/                # API nén và giải nén
+├── web/                # Giao diện HTML, CSS và JavaScript
 ├── data/               # Dữ liệu mẫu
 ├── doc/                # Ý tưởng và kế hoạch dự án
 ├── Test/               # Chương trình thử thủ công với một file
@@ -41,7 +42,7 @@ $env:PYTHONIOENCODING="utf-8"
 .\.venv\Scripts\python.exe -m core.benchmark
 ```
 
-## Chạy API
+## Chạy giao diện web và API
 
 Cài các thư viện và khởi động server:
 
@@ -49,11 +50,30 @@ Cài các thư viện và khởi động server:
 .\.venv\Scripts\python.exe -m uvicorn api.main:app --reload
 ```
 
-Mở `http://127.0.0.1:8000/docs` để thử API trên Swagger UI.
+Mở `http://127.0.0.1:8000/` để dùng giao diện web. Chỉ cần chạy một server.
+Không mở trực tiếp file HTML bằng cách nhấp đúp vì giao diện cần gọi API.
+Mở `http://127.0.0.1:8000/docs` nếu muốn thử API riêng trên Swagger UI.
 
 - `POST /api/compress`: nhận file và trả về file `.bin`.
 - `POST /api/decompress`: nhận file `.bin` và trả về file gốc.
 - `GET /health`: kiểm tra trạng thái API.
+- `GET /api/config`: lấy giới hạn file để giao diện hiển thị và kiểm tra.
+
+## Đọc phần giao diện
+
+- `web/index.html`: bố cục trang, vùng chọn file, nút thao tác và vùng kết quả.
+- `web/style.css`: màu sắc, kích thước, bố cục máy tính và điện thoại.
+- `web/script.js`: nhận file, gọi API và hiển thị phản hồi.
+
+Trong JavaScript, đọc `selectFile` → `submitFile` → `showResult`.
+`FormData` chứa file gửi lên, `fetch` gọi API, `Blob` chứa file trả về.
+`URL.createObjectURL` tạo đường dẫn tải xuống trong trình duyệt; khi đổi file,
+`clearResult` thu hồi đường dẫn cũ để giải phóng bộ nhớ.
+
+Nút Nén/Giải nén bị khóa trong lúc xử lý để tránh gửi nhầm dữ liệu.
+Tổng thời gian chờ tính từ lúc gửi yêu cầu đến khi nhận hết file, bao gồm
+truyền dữ liệu và chờ server, không phải chỉ thời gian chạy thuật toán.
+Số phần trăm âm nghĩa là file nén lớn hơn bản gốc; file nhỏ hoặc đã nén có thể gặp.
 
 File gốc và dữ liệu sau giải nén tối đa 25 MiB (26.214.400 byte).
 File nén được thêm 8.204 byte cho header và codebook, vì nén có thể làm file lớn hơn.
@@ -135,7 +155,7 @@ nên dùng nhiều bộ nhớ hơn phiên bản xử lý bit trực tiếp, đ�
 
 ## Hướng phát triển tiếp theo
 
-1. Xây dựng giao diện upload và tải file bằng HTML, CSS và JavaScript.
+1. Bổ sung số liệu thực nghiệm và phần minh họa cây Huffman.
 2. Bổ sung checksum để phát hiện file nén bị sửa đổi.
 3. Đo thời gian và bộ nhớ với các file 1 MB, 5 MB và 25 MB.
 
