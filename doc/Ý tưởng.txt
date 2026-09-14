@@ -1,0 +1,38 @@
+Ý tưởng xây dựng công cụ Smart Backup Shrinker (Hệ thống tự động nén và sao lưu dữ liệu) giải quyết rất đúng "nỗi đau" về chi phí lưu trữ của doanh nghiệp. Điểm "khách hàng không dùng không được" ở đây là: Các hệ thống máy chủ, app bán hàng hay database sinh ra hàng loạt file log, file báo cáo (CSV/JSON/Text) mỗi ngày; nếu để nguyên sẽ gây "phình to" bộ nhớ, còn thuê nhân sự ngồi nén thủ công thì quá lãng phí. Ứng dụng của anh em mình sẽ tự động hóa toàn bộ quy trình này.
+
+Ý tưởng dự án & Hướng đi
+
+Chức năng cốt lõi: Nhận file từ người dùng hoặc hệ thống (tự động trigger theo giờ), áp dụng thuật toán Huffman Coding (kết hợp với cấu trúc Tree) để phân tích tần suất ký tự, mã hóa và nén file lại với kích thước nhỏ nhất mà không làm mất bất kỳ dữ liệu nào (Lossless Compression).
+
+Giá trị ứng dụng: Trả về file đã nén, lưu trữ các siêu dữ liệu (metadata) vào database, và cung cấp API để giải nén (decompress) lại file nguyên bản bất cứ khi nào hệ thống cần khôi phục dữ liệu backup.
+
+Lộ trình triển khai chi tiết
+Giai đoạn 1: Prototype Thuật toán lõi (Tuần 1)
+Mục tiêu: Đảm bảo thuật toán Huffman chạy đúng logic, nén và giải nén thành công trên các file dữ liệu cơ bản.
+
+Thực thi: Viết các đoạn code Python xử lý cấu trúc dữ liệu Node và Priority Queue để xây dựng Huffman Tree.
+
+Môi trường: Anh em có thể test trực tiếp các script này trên Jupyter Notebook hoặc Google Colab trước. Môi trường này sẽ giúp ông dễ dàng print và debug từng bước duyệt cây, kiểm tra bảng mã bit (bit-encoding table) xem đã tối ưu chưa.
+
+Đầu ra: Một file text 10MB nén xuống còn khoảng 5-6MB và khi chạy hàm giải nén thì nội dung khớp 100% bản gốc.
+
+Giai đoạn 2: Xây dựng Backend API & Database
+Mục tiêu: Đóng gói thuật toán thành một service độc lập có thể giao tiếp qua mạng.
+
+Thiết kế Database: Vận dụng các kiến thức thiết kế cơ sở dữ liệu trên giảng đường để lên schema quản lý file. Bảng BackupLogs cần lưu trữ: file_id, tên_file_gốc, kích_thước_ban_đầu, kích_thước_sau_nén, và thời_gian_backup.
+
+Phát triển API: Dùng thư viện FastAPI hoặc Flask để tạo 2 endpoint chính:POST /backup: Nhận file upload, thực thi hàm nén, lưu file nén vào ổ cứng/cloud và insert log vào database.
+POST /restore: Nhận ID file, tìm file nén, giải nén và trả về file gốc cho người dùng tải xuống.
+
+Giai đoạn 3: Tích hợp, Kiểm thử & Đánh giá 
+Mục tiêu: Đảm bảo hệ thống chịu tải tốt và đo lường được hiệu năng thực tế của sản phẩm.
+
+thử thực tế: Khởi chạy server ở local và sử dụng ngrok để expose port ra ngoài internet. Bước này giúp các thành viên trong nhóm dễ dàng test API upload/download file mà không cần deploy lên server thật ngay lập tức.
+
+Phân tích hiệu năng: Bơm các dữ liệu log nén thu được vào Pandas để tính toán tỉ lệ nén trung bình (Compression Ratio) và thời gian thực thi (Execution Time) trên nhiều loại dung lượng file khác nhau. Sau đó, vẽ biểu đồ trực quan chứng minh tính hiệu quả của app.
+
+Giai đoạn 4: Hoàn thiện & Báo cáo 
+Mục tiêu: Đóng gói source code và chuẩn bị tài liệu bảo vệ cuối kì.
+
+tài liệu: Hệ thống hóa lại luồng chạy thuật toán và viết API docs rõ ràng. Nếu giảng viên yêu cầu format báo cáo chuẩn học thuật, ông có thể đẩy toàn bộ cấu trúc bài viết và hình ảnh biểu đồ lên Overleaf để xuất ra một bản PDF thật chuyên nghiệp.
+

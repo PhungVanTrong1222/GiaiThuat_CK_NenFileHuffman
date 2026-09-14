@@ -1,0 +1,122 @@
+TÀI LIỆU KẾ HOẠCH DỰ ÁN: SHRINKIT - HỆ THỐNG TỐI ƯU LƯU TRỮ & BACKUP DỮ LIỆU
+(Dự án cuối kỳ môn học - Ngôn ngữ: Python - Thời gian triển khai: 1 tuần)
+
+1. TỔNG QUAN DỰ ÁN (PROJECT OVERVIEW)
+Tên dự án: ShrinkIT (Data Shrink Engine).
+
+Mục tiêu: Xây dựng ứng dụng Web tự động nén các file văn bản, log, hoặc dữ liệu lớn trước khi lưu trữ nhằm giảm thiểu chi phí không gian lưu trữ thực tế (giải quyết bài toán "must-have" về tối ưu hóa chi phí vận hành cho doanh nghiệp).
+
+Luồng người dùng (User Flow):
+
+
+
+Tải file (Text/CSV/Log) lên hệ thống qua giao diện Web.
+
+Hệ thống xử lý nén dữ liệu nguyên vẹn không mất mát (Lossless Compression).
+
+Trực quan hóa dữ liệu: Web hiển thị biểu đồ so sánh dung lượng (trước/sau) và tỷ lệ tiết kiệm.
+
+Trả về file định dạng nén (.bin) hoặc tải file nén lên để khôi phục (Decompress) ra dữ liệu gốc ban đầu.
+
+Tech Stack:
+
+
+
+Core Algorithm: Python (Thuật toán Huffman Coding / Cấu trúc dữ liệu Tree & Min Heap).
+
+Backend: FastAPI.
+
+Frontend: Streamlit (Python UI).
+
+Quản lý Source Code: GitHub.
+
+2. QUY CHUẨN GIAO TIẾP VÀ MOCK DATA (CỰC KỲ QUAN TRỌNG)
+Để 5 thành viên làm việc song song từ ngày đầu tiên mà không phải chờ đợi nhau, nhóm áp dụng "Thiết kế theo hợp đồng" (Contract-first). Mỗi bộ phận chỉ cần code đúng Đầu vào/Đầu ra đã chốt dưới đây:
+
+A. Khớp nối giữa Core Algorithm & Backend (File huffman.py)
+
+Hàm Nén (Compress): Nhận bytes (file gốc) Trả về bytes (file nén) và dict (chứa original_size, compressed_size).
+
+Hàm Giải nén (Decompress): Nhận bytes (file nén)  Trả về bytes (file gốc).
+
+B. Khớp nối giữa Backend & Frontend (API /api/compress)
+
+Request: Frontend gửi request dạng multipart/form-data chứa file upload.
+
+Response (JSON chuẩn):
+
+JSON
+{
+  "status": "success",
+  "original_size_kb": 1024,
+  "compressed_size_kb": 450,
+  "compression_ratio": "56.05%",
+  "download_url": "http://localhost:8000/download/file_abc123.bin"
+}
+
+
+(Lưu ý: Frontend dùng chuỗi JSON giả này để thiết kế UI, Backend dùng chuỗi này để test API trả về trong lúc chờ thuật toán hoàn thiện).
+
+3. CẤU TRÚC THƯ MỤC NGUỒN (GITHUB)
+Plaintext
+ShrinkIT/
+├── core/                   # Chứa file huffman.py (Thuật toán)
+├── api/                    # Chứa file main.py (FastAPI endpoints)
+├── ui/                     # Chứa file app.py (Giao diện Streamlit)
+├── data/                   # Chứa các file mẫu (.txt, .csv) để test
+└── requirements.txt        # Danh sách thư viện cần cài đặt
+
+
+4. PHÂN CÔNG NHIỆM VỤ & GỢI Ý PROMPT AI
+Thành viên 1: Trưởng nhóm (PM & System Architect)
+
+Nhiệm vụ: Khởi tạo Repo GitHub, đẩy cấu trúc thư mục lên nhánh main, quản lý file requirements.txt. Điều phối tiến độ trên Trello/Notion, xử lý merge code khi ráp nối và chuẩn bị Slide thuyết trình. Đảm bảo quy tắc: Không ai code đè lên file thuộc thư mục của người khác.
+
+Thành viên 2: Thuật toán Core (Algorithm Developer)
+
+Nhiệm vụ: Viết logic nén/giải nén file bằng thuật toán Huffman Coding. Code xử lý file trong thư mục core/.
+
+Gợi ý Prompt AI: "Đóng vai chuyên gia cấu trúc dữ liệu. Viết bằng Python class HuffmanCoding nén và giải nén file text/CSV. Cần 2 hàm: compress_data(input_bytes: bytes) -> tuple[bytes, dict] và decompress_data(input_bytes: bytes) -> bytes. Yêu cầu mã tối ưu cho file lớn, comment chi tiết cách xây Min Heap, Huffman Tree và xử lý padding bits."
+
+Thành viên 3: Backend Engineer (API Developer)
+
+Nhiệm vụ: Dùng FastAPI tạo Web Server nhận file và trả kết quả. Code trong thư mục api/. Trong 2 ngày đầu, viết hàm API giả lập (Mock API) trả về nguyên mẫu chuỗi JSON chuẩn ở mục 2 để Frontend có kết nối.
+
+Gợi ý Prompt AI: "Viết FastAPI server (cấu hình sẵn CORS) có 2 endpoint. 1. /api/compress: Nhận file upload, lưu tạm, (tạm thời giả lập xử lý thuật toán) và trả về chuẩn JSON sau: [Dán JSON ở mục 2 vào]. 2. /api/decompress: Nhận file nén .bin và trả về định dạng file tải xuống."
+
+Thành viên 4: Frontend Developer (UI/UX)
+
+Nhiệm vụ: Dựng giao diện Web bằng thư viện Streamlit trong thư mục ui/. Tạo khu vực drag-and-drop file. Xử lý logic gọi API, dùng dữ liệu JSON giả lập ở mục 2 để vẽ biểu đồ cột so sánh ngay lập tức mà không cần đợi API thật.
+
+Gợi ý Prompt AI: "Viết ứng dụng Web bằng Streamlit có thanh sidebar để người dùng chọn Nén hoặc Giải nén. Tạo vùng upload file. Khi bấm nút, giả lập thời gian xử lý time.sleep(2) rồi nhận kết quả JSON ảo: [Dán JSON mục 2 vào]. Dùng Plotly để vẽ biểu đồ cột thể hiện trực quan sự chênh lệch giữa 'original_size_kb' và 'compressed_size_kb'."
+
+Thành viên 5: QA, Data & Deployment
+
+Nhiệm vụ: Tải các file Text/CSV mẫu (1MB, 5MB, 50MB) từ Kaggle bỏ vào thư mục data/ làm bộ test. Tìm lỗi ở góc độ người dùng (upload nhầm file hình ảnh, file rỗng). Cấu hình Ngrok (ngrok http 8501) để phơi bày cổng localhost ra Internet lấy link public cho giảng viên xem trực tiếp. Hỗ trợ viết docs kỹ thuật.
+
+5. LỘ TRÌNH TRIỂN KHAI 
+
+Ngày 1: TV1 setup kho mã nguồn. Cả nhóm họp chốt lại các "Khớp nối giao tiếp", clone code về VSCode cá nhân và cài đặt môi trường ảo.
+
+Ngày 2-3:
+
+
+
+TV2 code thuật toán độc lập trên Colab/VSCode.
+
+TV3 dựng API giả lập bằng FastAPI.
+
+TV4 thiết kế UI và gọi vào API giả lập bằng Streamlit.
+
+TV5 thu thập và phân loại data test.
+
+Ngày 4: Ráp Backend (TV3) + Thuật toán (TV2). Test API nội bộ bằng Postman/Swagger UI với file thực tế.
+
+Ngày 5: Ráp Frontend (TV4) + API hoàn thiện. TV5 chạy quy trình kiểm thử toàn bộ luồng từ giao diện đẩy xuống xử lý thuật toán và bắt các lỗi phát sinh (Edge cases).
+
+Ngày 6: Fix bug toàn hệ thống. Tinh chỉnh trực quan hóa biểu đồ trên giao diện. Chạy thử đường dẫn public bằng Ngrok.
+
+Ngày 7: Hoàn thiện báo cáo Docs, đóng gói Slide. Quay dự phòng 1 video demo luồng nén và giải nén thành công phòng trường hợp mạng báo cáo yếu.
+
+
+
