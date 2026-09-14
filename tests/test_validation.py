@@ -6,7 +6,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 from api.main import app
 from core import get_compressor, auto_decompress
-from core.base_compressor import pack_header
+from core.file_format import pack_header
 
 
 class ValidationTests(unittest.TestCase):

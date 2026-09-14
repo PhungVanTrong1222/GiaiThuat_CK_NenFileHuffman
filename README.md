@@ -109,6 +109,14 @@ Thông báo dung lượng được tính từ cấu hình, không ghi cố đị
 
 ## Đọc phần thuật toán
 
+Phần lõi gồm hai file chính:
+
+- `core/huffman.py`: lớp Huffman độc lập, thực hiện nén, giải nén và tính tỷ lệ nén.
+- `core/file_format.py`: đọc/ghi header 12 byte của file nén.
+
+Không dùng lớp cha hay lớp trừu tượng. `core/__init__.py` chỉ cung cấp các hàm
+gọi Huffman cho API và chương trình chạy thử.
+
 Trong `core/huffman.py`, đọc theo thứ tự:
 
 1. `_count_frequency`: đếm số lần xuất hiện của từng byte.

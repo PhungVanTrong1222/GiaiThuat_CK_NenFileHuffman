@@ -13,7 +13,7 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import Response
 
 from core import auto_decompress, get_compressor, list_algorithms
-from core.base_compressor import HEADER_SIZE, unpack_header
+from core.file_format import HEADER_SIZE, unpack_header
 from core.huffman import HuffmanCompressor
 
 

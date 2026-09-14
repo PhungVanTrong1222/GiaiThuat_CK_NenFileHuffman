@@ -7,7 +7,7 @@ Chuỗi '0'/'1' giúp theo dõi thuật toán, nhưng tốn RAM hơn cách đón
 import heapq
 import json
 
-from .base_compressor import BaseCompressor, HEADER_SIZE, pack_header, unpack_header
+from .file_format import HUFFMAN_ID, HEADER_SIZE, pack_header, unpack_header
 
 
 class HuffmanNode:
@@ -27,12 +27,25 @@ class HuffmanNode:
         return self.freq < other.freq
 
 
-class HuffmanCompressor(BaseCompressor):
+class HuffmanCompressor:
     MAX_CODEBOOK_SIZE = 8192
 
-    @property
-    def algorithm_name(self):
-        return "huffman"
+    algorithm_name = "huffman"
+    algorithm_id = HUFFMAN_ID
+
+    def _build_stats(self, original_size, compressed_size):
+        """Tính phần trăm dung lượng giảm được; số âm nghĩa là file lớn hơn."""
+        compression_ratio = 0.0
+        if original_size > 0:
+            saved_size = original_size - compressed_size
+            compression_ratio = saved_size / original_size * 100
+
+        return {
+            "original_size": original_size,
+            "compressed_size": compressed_size,
+            "compression_ratio": round(compression_ratio, 2),
+            "algorithm": self.algorithm_name,
+        }
 
     def _count_frequency(self, data):
         """Bước 1: đếm số lần mỗi byte xuất hiện."""
@@ -211,7 +224,8 @@ class HuffmanCompressor(BaseCompressor):
     def _read_compressed_file(self, input_bytes):
         """Đọc và kiểm tra định dạng file; không thực hiện thuật toán giải mã."""
         header = unpack_header(input_bytes)
-        self._validate_header(header)
+        if header["algorithm_id"] != self.algorithm_id:
+            raise ValueError("File không dùng thuật toán Huffman.")
         size = header["original_size"]
         book_size = header["codebook_size"]
         padding = header["padding_bits"]
