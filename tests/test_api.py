@@ -8,7 +8,11 @@ from api.main import app
 class ApiTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.client = TestClient(app)
+        cls.client = TestClient(app).__enter__()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.client.__exit__(None, None, None)
 
     def test_health_check(self):
         response = self.client.get("/health")

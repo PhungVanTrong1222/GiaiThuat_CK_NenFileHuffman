@@ -2,9 +2,9 @@
 ShrinkIT - Base Compressor Module
 ==================================
 Định nghĩa abstract class BaseCompressor và các hàm tiện ích
-để đọc/ghi header 12 bytes cho file nén .bin.
+để đọc/ghi header 12 bytes cho file nén .huff.
 
-File Format (.bin):
+File Format (.huff, tương thích file .bin cũ):
     [Magic bytes]    2 bytes  - b"SK" (ShrinkIT identifier)
     [Algorithm ID]   1 byte   - 0x01=Huffman
     [Original size]  4 bytes  - Kích thước file gốc (big-endian)

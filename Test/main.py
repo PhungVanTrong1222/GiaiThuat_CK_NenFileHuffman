@@ -8,7 +8,7 @@ from core import get_compressor
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_INPUT = os.path.join(PROJECT_DIR, "data", "sample.txt")
-COMPRESSED_FILE = os.path.join(PROJECT_DIR, "data", "output.bin")
+COMPRESSED_FILE = os.path.join(PROJECT_DIR, "data", "output.huff")
 DECOMPRESSED_FILE = os.path.join(PROJECT_DIR, "data", "restored.txt")
 
 parser = argparse.ArgumentParser(description="Kiểm tra nén và giải nén Huffman.")
