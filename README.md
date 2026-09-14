@@ -80,6 +80,25 @@ Các file `.bin` cũ vẫn đọc được vì định dạng bên trong không 
 File nén được kiểm tra header, codebook, số bit, padding và tần suất sau giải nén.
 Chưa có checksum nên không phát hiện được mọi thay đổi giữ nguyên tần suất byte.
 
+
+## Đọc phần thuật toán
+
+Trong `core/huffman.py`, đọc theo thứ tự:
+
+1. `_count_frequency`: đếm số lần xuất hiện của từng byte.
+2. `_build_tree`: lấy hai nút nhỏ nhất trong min heap và ghép thành nút cha.
+3. `_build_codes`: duyệt cây, trái là 0 và phải là 1.
+4. `_encode`: ghép các mã, thêm padding và đổi từng nhóm 8 bit thành byte.
+5. `_decode`: khôi phục chuỗi bit, bỏ padding, duyệt cây để lấy lại dữ liệu.
+
+Ví dụ với `AAAB`: A có mã 1, B có mã 0. Chuỗi mã là `1110`;
+thêm 4 bit đệm thành `11100000`. Khi giải nén, bỏ 4 bit đệm rồi
+duyệt cây theo `1110` để thu lại `AAAB`.
+
+Các hàm đọc header và kiểm tra file được tách khỏi các bước thuật toán.
+Cách cài đặt này ưu tiên dễ đọc: chuỗi bit của cả file được giữ trong RAM,
+nên dùng nhiều bộ nhớ hơn phiên bản xử lý bit trực tiếp, đặc biệt với file lớn.
+
 ## Hướng phát triển tiếp theo
 
 1. Xây dựng giao diện upload và tải file bằng Streamlit.
