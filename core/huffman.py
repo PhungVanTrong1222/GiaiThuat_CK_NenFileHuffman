@@ -12,9 +12,9 @@ from .file_format import HUFFMAN_ID, HEADER_SIZE, pack_header, unpack_header
 
 class HuffmanNode:
     """Nút lá chứa một byte; nút cha chứa tổng tần suất của các nút con."""
-    def __init__(self, byte_val=None, freq=0, left=None, right=None):
-        self.byte_val = byte_val
-        self.freq = freq
+    def __init__(self, byte_value=None, frequency=0, left=None, right=None):
+        self.byte_value = byte_value
+        self.frequency = frequency
         self.left = left
         self.right = right
 
@@ -24,7 +24,7 @@ class HuffmanNode:
 
     def __lt__(self, other):
         # heapq dùng phép so sánh này để lấy nút có tần suất nhỏ nhất.
-        return self.freq < other.freq
+        return self.frequency < other.frequency
 
 
 class HuffmanCompressor:
@@ -33,7 +33,7 @@ class HuffmanCompressor:
     algorithm_name = "huffman"
     algorithm_id = HUFFMAN_ID
 
-    def _build_stats(self, original_size, compressed_size):
+    def calculate_statistics(self, original_size, compressed_size):
         """Tính phần trăm dung lượng giảm được; số âm nghĩa là file lớn hơn."""
         compression_ratio = 0.0
         if original_size > 0:
@@ -47,7 +47,7 @@ class HuffmanCompressor:
             "algorithm": self.algorithm_name,
         }
 
-    def _count_frequency(self, data):
+    def count_frequency(self, data):
         """Bước 1: đếm số lần mỗi byte xuất hiện."""
         frequency = {}
         for byte_value in data:
@@ -56,27 +56,27 @@ class HuffmanCompressor:
             frequency[byte_value] += 1
         return frequency
 
-    def _build_tree(self, frequency):
+    def build_tree(self, frequency):
         """Bước 2: liên tục ghép hai cây có tần suất nhỏ nhất."""
         if not frequency:
             return None
         # Giữ thứ tự trong bảng tần suất để đọc được file của phiên bản cũ.
         heap = []
         for byte_value, count in frequency.items():
-            leaf = HuffmanNode(byte_val=byte_value, freq=count)
+            leaf = HuffmanNode(byte_value=byte_value, frequency=count)
             heapq.heappush(heap, leaf)
 
         if len(heap) == 1:
             # Chỉ một loại byte: thêm gốc để byte đó có mã '0'.
             leaf = heapq.heappop(heap)
-            root = HuffmanNode(freq=leaf.freq, left=leaf)
+            root = HuffmanNode(frequency=leaf.frequency, left=leaf)
             return root
 
         while len(heap) > 1:
             left = heapq.heappop(heap)
             right = heapq.heappop(heap)
             parent = HuffmanNode(
-                freq=left.freq + right.freq,
+                frequency=left.frequency + right.frequency,
                 left=left,
                 right=right,
             )
@@ -84,28 +84,28 @@ class HuffmanCompressor:
         root = heap[0]
         return root
 
-    def _build_codes(self, root):
+    def build_codes(self, root):
         """Bước 3: đi trái thêm '0', đi phải thêm '1'; đến lá thì lưu mã."""
         codes = {}
         if root is not None:
-            self._traverse_tree(root, "", codes)
+            self.traverse_tree(root, "", codes)
         return codes
 
-    def _traverse_tree(self, node, current_code, codes):
+    def traverse_tree(self, node, current_code, codes):
         """Duyệt đệ quy: current_code là đường đi từ gốc đến nút đang xét."""
         if node.is_leaf():
-            codes[node.byte_val] = current_code
+            codes[node.byte_value] = current_code
             return
 
         if node.left is not None:
             left_code = current_code + "0"
-            self._traverse_tree(node.left, left_code, codes)
+            self.traverse_tree(node.left, left_code, codes)
 
         if node.right is not None:
             right_code = current_code + "1"
-            self._traverse_tree(node.right, right_code, codes)
+            self.traverse_tree(node.right, right_code, codes)
 
-    def _encode(self, data, codes):
+    def encode_data(self, data, codes):
         """Bước 4: thay mỗi byte bằng mã Huffman, rồi chia thành nhóm 8 bit."""
         code_list = []
         for byte_value in data:
@@ -129,7 +129,7 @@ class HuffmanCompressor:
             compressed_bytes.append(byte_value)
         return bytes(compressed_bytes), padding
 
-    def _decode(self, payload, root, original_size, padding):
+    def decode_data(self, payload, root, original_size, padding):
         """Giải nén: đọc từng bit, đến nút lá thì lấy byte và quay lại gốc."""
         # '08b' chuyển một byte thành đúng 8 ký tự, kể cả các số 0 ở đầu.
         bit_groups = []
@@ -154,7 +154,7 @@ class HuffmanCompressor:
             if current_node.is_leaf():
                 if len(restored_bytes) >= original_size:
                     raise ValueError("Dữ liệu nén có byte thừa.")
-                restored_bytes.append(current_node.byte_val)
+                restored_bytes.append(current_node.byte_value)
                 current_node = root
 
         if current_node is not root or len(restored_bytes) != original_size:
@@ -162,15 +162,15 @@ class HuffmanCompressor:
         return bytes(restored_bytes)
 
     # Các hàm bên dưới hỗ trợ lưu/đọc file và kiểm tra lỗi.
-    # Khi học thuật toán, đọc _count_frequency đến _decode trước.
+    # Khi học thuật toán, đọc count_frequency đến decode_data trước.
 
-    def _serialize_codebook(self, frequency):
+    def serialize_codebook(self, frequency):
         """Đổi bảng tần suất sang JSON rồi sang bytes để lưu trong file."""
         json_text = json.dumps(frequency, separators=(",", ":"))
         codebook_bytes = json_text.encode("utf-8")
         return codebook_bytes
 
-    def _check_duplicate_keys(self, pairs):
+    def check_duplicate_keys(self, pairs):
         """JSON gọi hàm này với các cặp (khóa, giá trị) đọc được."""
         result = {}
         for key, value in pairs:
@@ -179,12 +179,12 @@ class HuffmanCompressor:
             result[key] = value
         return result
 
-    def _deserialize_codebook(self, data):
+    def deserialize_codebook(self, data):
         """Đọc bảng tần suất từ file; từ chối dữ liệu không hợp lệ."""
         try:
             json_text = data.decode("utf-8")
             # Hook giúp phát hiện khóa trùng thay vì âm thầm ghi đè giá trị.
-            raw = json.loads(json_text, object_pairs_hook=self._check_duplicate_keys)
+            raw = json.loads(json_text, object_pairs_hook=self.check_duplicate_keys)
             if not isinstance(raw, dict):
                 raise ValueError("Bảng tần suất phải là dictionary.")
             if len(raw) > 256:
@@ -209,32 +209,32 @@ class HuffmanCompressor:
 
     def compress_data(self, input_bytes):
         """Thực hiện lần lượt các bước Huffman và lưu thông tin để giải nén."""
-        frequency = self._count_frequency(input_bytes)
-        root = self._build_tree(frequency)
-        codes = self._build_codes(root)
-        payload, padding = self._encode(input_bytes, codes)
+        frequency = self.count_frequency(input_bytes)
+        root = self.build_tree(frequency)
+        codes = self.build_codes(root)
+        payload, padding = self.encode_data(input_bytes, codes)
 
         # File = header + bảng tần suất + dữ liệu nén.
-        codebook = self._serialize_codebook(frequency)
+        codebook = self.serialize_codebook(frequency)
         header = pack_header(self.algorithm_id, len(input_bytes), len(codebook), padding)
         compressed = header + codebook + payload
-        stats = self._build_stats(len(input_bytes), len(compressed))
+        stats = self.calculate_statistics(len(input_bytes), len(compressed))
         return compressed, stats
 
-    def _read_compressed_file(self, input_bytes):
+    def read_compressed_file(self, input_bytes):
         """Đọc và kiểm tra định dạng file; không thực hiện thuật toán giải mã."""
         header = unpack_header(input_bytes)
         if header["algorithm_id"] != self.algorithm_id:
             raise ValueError("File không dùng thuật toán Huffman.")
         size = header["original_size"]
-        book_size = header["codebook_size"]
+        codebook_size = header["codebook_size"]
         padding = header["padding_bits"]
-        if padding > 7 or not 2 <= book_size <= self.MAX_CODEBOOK_SIZE:
+        if padding > 7 or not 2 <= codebook_size <= self.MAX_CODEBOOK_SIZE:
             raise ValueError("Padding hoặc kích thước codebook không hợp lệ.")
-        end = HEADER_SIZE + book_size
+        end = HEADER_SIZE + codebook_size
         if end > len(input_bytes):
             raise ValueError("File nén bị thiếu codebook.")
-        frequency = self._deserialize_codebook(input_bytes[HEADER_SIZE:end])
+        frequency = self.deserialize_codebook(input_bytes[HEADER_SIZE:end])
         if sum(frequency.values()) != size:
             raise ValueError("Bảng tần suất không khớp kích thước gốc.")
         payload = input_bytes[end:]
@@ -243,7 +243,7 @@ class HuffmanCompressor:
                 raise ValueError("File rỗng có dữ liệu thừa.")
         return frequency, payload, size, padding
 
-    def _validate_payload(self, payload, codes, frequency, padding):
+    def validate_payload(self, payload, codes, frequency, padding):
         """Kiểm tra độ dài và padding trước khi duyệt cây."""
         expected_bits = 0
         for byte_value, count in frequency.items():
@@ -258,15 +258,15 @@ class HuffmanCompressor:
 
     def decompress_data(self, input_bytes):
         """Đọc bảng tần suất, xây lại cây và giải mã dữ liệu."""
-        frequency, payload, original_size, padding = self._read_compressed_file(input_bytes)
+        frequency, payload, original_size, padding = self.read_compressed_file(input_bytes)
         if original_size == 0:
             return b""
 
-        root = self._build_tree(frequency)
-        codes = self._build_codes(root)
-        self._validate_payload(payload, codes, frequency, padding)
-        restored = self._decode(payload, root, original_size, padding)
-        restored_frequency = self._count_frequency(restored)
+        root = self.build_tree(frequency)
+        codes = self.build_codes(root)
+        self.validate_payload(payload, codes, frequency, padding)
+        restored = self.decode_data(payload, root, original_size, padding)
+        restored_frequency = self.count_frequency(restored)
         if restored_frequency != frequency:
             raise ValueError("Tần suất dữ liệu giải nén không khớp codebook.")
         return restored

@@ -8,11 +8,13 @@ from api.main import app
 class ApiTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.client = TestClient(app).__enter__()
+        # unittest gọi hàm này một lần trước khi chạy các test của lớp.
+        cls.client_context = TestClient(app)
+        cls.client = cls.client_context.__enter__()
 
     @classmethod
     def tearDownClass(cls):
-        cls.client.__exit__(None, None, None)
+        cls.client_context.__exit__(None, None, None)
 
     def test_health_check(self):
         response = self.client.get("/health")

@@ -119,11 +119,11 @@ gọi Huffman cho API và chương trình chạy thử.
 
 Trong `core/huffman.py`, đọc theo thứ tự:
 
-1. `_count_frequency`: đếm số lần xuất hiện của từng byte.
-2. `_build_tree`: lấy hai nút nhỏ nhất trong min heap và ghép thành nút cha.
-3. `_build_codes`: duyệt cây, trái là 0 và phải là 1.
-4. `_encode`: ghép các mã, thêm padding và đổi từng nhóm 8 bit thành byte.
-5. `_decode`: khôi phục chuỗi bit, bỏ padding, duyệt cây để lấy lại dữ liệu.
+1. `count_frequency`: đếm số lần xuất hiện của từng byte.
+2. `build_tree`: lấy hai nút nhỏ nhất trong min heap và ghép thành nút cha.
+3. `build_codes`: duyệt cây, trái là 0 và phải là 1.
+4. `encode_data`: ghép các mã, thêm padding và đổi từng nhóm 8 bit thành byte.
+5. `decode_data`: khôi phục chuỗi bit, bỏ padding, duyệt cây để lấy lại dữ liệu.
 
 Ví dụ với `AAAB`: A có mã 1, B có mã 0. Chuỗi mã là `1110`;
 thêm 4 bit đệm thành `11100000`. Khi giải nén, bỏ 4 bit đệm rồi
@@ -138,3 +138,16 @@ nên dùng nhiều bộ nhớ hơn phiên bản xử lý bit trực tiếp, đ�
 1. Xây dựng giao diện upload và tải file bằng HTML, CSS và JavaScript.
 2. Bổ sung checksum để phát hiện file nén bị sửa đổi.
 3. Đo thời gian và bộ nhớ với các file 1 MB, 5 MB và 25 MB.
+
+## Quy ước viết code
+
+Tên hàm và biến viết đầy đủ, dùng dấu gạch dưới giữa các từ, ví dụ
+`count_frequency`. Không thêm dấu gạch dưới ở đầu tên hàm thông thường.
+`__init__` và `__lt__` giữ nguyên vì Python dùng chúng để khởi tạo và so sánh đối tượng.
+
+Ưu tiên vòng lặp, biến trung gian và điều kiện rõ ràng. Chú thích giải thích
+mục đích hoặc phần khó. Các tên `setUp`, `test_...` trong kiểm thử là quy ước
+của unittest để chuẩn bị và tìm các bài kiểm tra.
+
+Chương trình chạy thử có hàm `main()`; chỉ chạy khi mở trực tiếp bằng Python.
+Import file để đọc hoặc kiểm thử không tự tạo hay ghi đè dữ liệu mẫu.

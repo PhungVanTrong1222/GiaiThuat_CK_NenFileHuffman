@@ -64,7 +64,10 @@ class ApiValidationTests(unittest.TestCase):
         self.addCleanup(self.context.__exit__, None, None, None)
 
     def post(self, endpoint, data):
-        return self.client.post(endpoint, files={"file": ("test.huff", data)})
+        uploaded_file = ("test.huff", data)
+        form_files = {"file": uploaded_file}
+        response = self.client.post(endpoint, files=form_files)
+        return response
 
     def test_upload_limits_and_expanded_file(self):
         with patch("api.main.MAX_FILE_SIZE", 256):
