@@ -6,13 +6,11 @@ Các hàm phía trên hỗ trợ đọc file, kiểm tra dung lượng và tạo
 
 import re
 import unicodedata
-from contextlib import asynccontextmanager
 from pathlib import Path
+from threading import BoundedSemaphore
 
-from anyio import CapacityLimiter
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import Response
-from starlette.concurrency import run_in_threadpool
 
 from core import auto_decompress, get_compressor, list_algorithms
 from core.base_compressor import HEADER_SIZE, unpack_header
@@ -25,23 +23,18 @@ MAX_COMPRESSED_SIZE = MAX_FILE_SIZE + HuffmanCompressor.MAX_CODEBOOK_SIZE + HEAD
 MAX_CONCURRENT_TASKS = 2
 
 
-@asynccontextmanager
-async def lifespan(app):
-    """FastAPI gọi hàm này khi server khởi động và dừng."""
-    # Mỗi tác vụ giữ dữ liệu trong RAM, nên chỉ cho hai tác vụ chạy cùng lúc.
-    app.state.codec_limiter = CapacityLimiter(MAX_CONCURRENT_TASKS)
-    yield
+# Giống hai chỗ làm việc: tác vụ thứ ba phải chờ một chỗ trống.
+processing_slots = BoundedSemaphore(MAX_CONCURRENT_TASKS)
 
 
 app = FastAPI(
-    lifespan=lifespan,
     title="ShrinkIT API",
     description="API nén và giải nén file bằng thuật toán Huffman.",
     version="1.0.0",
 )
 
 
-def safe_filename(filename: str | None, default_name: str) -> str:
+def safe_filename(filename, default_name):
     """Tạo tên file phù hợp để đặt trong header tải xuống."""
     if not filename:
         filename = default_name
@@ -49,7 +42,8 @@ def safe_filename(filename: str | None, default_name: str) -> str:
     filename = Path(filename).name
     # Chuyển tên về ASCII và thay ký tự đặc biệt bằng dấu gạch dưới.
     filename = unicodedata.normalize("NFKD", filename)
-    filename = filename.encode("ascii", "ignore").decode("ascii")
+    filename_bytes = filename.encode("ascii", "ignore")
+    filename = filename_bytes.decode("ascii")
     filename = re.sub(r"[^A-Za-z0-9._-]", "_", filename)
     filename = filename.strip("._")
 
@@ -58,14 +52,14 @@ def safe_filename(filename: str | None, default_name: str) -> str:
     return filename
 
 
-async def read_uploaded_file(file: UploadFile, size_limit: int) -> bytes:
+def read_uploaded_file(file, size_limit):
     """Đọc nội dung file; trả lỗi HTTP 413 nếu vượt giới hạn."""
     try:
         # Đọc thêm 1 byte để biết file có vượt giới hạn hay không.
-        file_data = await file.read(size_limit + 1)
+        file_data = file.file.read(size_limit + 1)
     finally:
         # File tạm phải được đóng cả khi đọc thất bại.
-        await file.close()
+        file.file.close()
 
     if len(file_data) > size_limit:
         raise HTTPException(
@@ -75,7 +69,7 @@ async def read_uploaded_file(file: UploadFile, size_limit: int) -> bytes:
     return file_data
 
 
-def validate_restored_size(compressed_data: bytes) -> None:
+def validate_restored_size(compressed_data):
     """Kiểm tra kích thước gốc trong header trước khi cấp bộ nhớ giải nén."""
     header = unpack_header(compressed_data)
     if header["original_size"] > MAX_FILE_SIZE:
@@ -85,7 +79,7 @@ def validate_restored_size(compressed_data: bytes) -> None:
         )
 
 
-def restored_filename(uploaded_name: str | None) -> str:
+def restored_filename(uploaded_name):
     """Ví dụ: baocao.txt.huff -> baocao.txt."""
     filename = safe_filename(uploaded_name, "file.huff")
     if filename.lower().endswith(".huff"):
@@ -94,7 +88,7 @@ def restored_filename(uploaded_name: str | None) -> str:
     return filename + ".restored"
 
 
-def download_response(file_data: bytes, filename: str, stats: dict | None = None) -> Response:
+def download_response(file_data, filename, stats=None):
     """Đặt dữ liệu vào body và tên file, thống kê vào HTTP headers."""
     headers = {
         "Content-Disposition": f'attachment; filename="{filename}"',
@@ -105,48 +99,55 @@ def download_response(file_data: bytes, filename: str, stats: dict | None = None
         headers["X-Compression-Ratio"] = str(stats["compression_ratio"])
         headers["X-Compression-Algorithm"] = stats["algorithm"]
 
-    return Response(
+    response = Response(
         content=file_data,
         media_type="application/octet-stream",  # Dữ liệu file nhị phân.
         headers=headers,
     )
+    return response
 
 
 @app.get("/health")
-def health_check() -> dict:
+def health_check():
     """Cho giao diện biết server đang hoạt động."""
     return {"status": "ok", "algorithms": list_algorithms()}
 
 
 @app.post("/api/compress")
-async def compress_file(file: UploadFile) -> Response:
+def compress_file(file: UploadFile):
     """Nhận file -> đọc dữ liệu -> nén Huffman -> trả file .huff."""
-    # async with: chờ một vị trí trống; tự trả vị trí khi xong hoặc gặp lỗi.
-    async with app.state.codec_limiter:
-        original_data = await read_uploaded_file(file, MAX_FILE_SIZE)
+    # FastAPI tự chạy hàm def trong thread, nên không cần async/await ở đây.
+    # with tự trả chỗ xử lý khi kết thúc, kể cả khi có lỗi.
+    with processing_slots:
+        # 1. Đọc file người dùng gửi lên.
+        original_data = read_uploaded_file(file, MAX_FILE_SIZE)
+
+        # 2. Tạo đối tượng Huffman và nén dữ liệu.
         compressor = get_compressor("huffman")
+        compressed_data, stats = compressor.compress_data(original_data)
 
-        # Huffman chạy trong thread để không chạy trực tiếp trên event loop.
-        # await chờ kết quả, đồng thời cho server tiếp tục xử lý công việc khác.
-        compressed_data, stats = await run_in_threadpool(
-            compressor.compress_data, original_data
-        )
-
-    filename = safe_filename(file.filename, "file") + ".huff"
-    return download_response(compressed_data, filename, stats)
+    # 3. Đặt tên file và gửi kết quả về trình duyệt.
+    original_name = safe_filename(file.filename, "file")
+    filename = original_name + ".huff"
+    response = download_response(compressed_data, filename, stats)
+    return response
 
 
 @app.post("/api/decompress")
-async def decompress_file(file: UploadFile) -> Response:
+def decompress_file(file: UploadFile):
     """Nhận file nén -> kiểm tra -> giải nén Huffman -> trả dữ liệu gốc."""
-    async with app.state.codec_limiter:
-        compressed_data = await read_uploaded_file(file, MAX_COMPRESSED_SIZE)
+    with processing_slots:
+        # 1. Đọc file nén.
+        compressed_data = read_uploaded_file(file, MAX_COMPRESSED_SIZE)
         try:
+            # 2. Kiểm tra dung lượng gốc rồi giải nén.
             validate_restored_size(compressed_data)
-            restored_data = await run_in_threadpool(auto_decompress, compressed_data)
+            restored_data = auto_decompress(compressed_data)
         except ValueError as error:
             # Phần lõi báo ValueError; API chuyển thành lỗi HTTP 400 cho giao diện.
             raise HTTPException(status_code=400, detail=str(error)) from error
 
+    # 3. Đặt tên file khôi phục và gửi về trình duyệt.
     filename = restored_filename(file.filename)
-    return download_response(restored_data, filename)
+    response = download_response(restored_data, filename)
+    return response

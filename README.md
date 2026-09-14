@@ -96,10 +96,13 @@ API chỉ phụ trách nhận/trả file; thuật toán nằm trong thư mục `
 Body của phản hồi chứa dữ liệu nhị phân. Header `Content-Disposition` đặt tên
 file tải xuống; các header `X-...` chứa số liệu để giao diện hiển thị.
 
-`await` chờ một công việc hoàn thành. `run_in_threadpool` chạy Huffman
-trong thread, giúp server không thực hiện thuật toán trực tiếp trên event loop.
-`lifespan` chuẩn bị giới hạn số tác vụ khi server khởi động;
-`async with` giữ một vị trí xử lý và tự trả lại vị trí đó khi kết thúc.
+Các endpoint dùng hàm `def` thông thường. FastAPI tự chạy chúng trong thread.
+Vì vậy bên trong hàm có thể đọc file và gọi Huffman theo thứ tự, không dùng
+`async/await`. Tham số `file: UploadFile` cho FastAPI biết cần nhận một file upload.
+
+`processing_slots` giống hai chỗ làm việc, chỉ cho hai tác vụ xử lý đồng thời.
+`with processing_slots` chờ một chỗ trống và tự trả chỗ khi xong hoặc gặp lỗi.
+Đây là phần giới hạn sử dụng RAM, không thuộc thuật toán Huffman.
 
 Muốn đổi giới hạn, sửa `MAX_FILE_SIZE` ở đầu file rồi khởi động lại API.
 Thông báo dung lượng được tính từ cấu hình, không ghi cố định trong từng hàm.
@@ -124,6 +127,6 @@ nên dùng nhiều bộ nhớ hơn phiên bản xử lý bit trực tiếp, đ�
 
 ## Hướng phát triển tiếp theo
 
-1. Xây dựng giao diện upload và tải file bằng Streamlit.
+1. Xây dựng giao diện upload và tải file bằng HTML, CSS và JavaScript.
 2. Bổ sung checksum để phát hiện file nén bị sửa đổi.
 3. Đo thời gian và bộ nhớ với các file 1 MB, 5 MB và 25 MB.
