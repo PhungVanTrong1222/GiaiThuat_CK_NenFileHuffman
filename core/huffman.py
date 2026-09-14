@@ -13,16 +13,28 @@ from .file_format import HUFFMAN_ID, HEADER_SIZE, pack_header, unpack_header
 class HuffmanNode:
     """Nút lá chứa một byte; nút cha chứa tổng tần suất của các nút con."""
     def __init__(self, byte_value=None, frequency=0, left=None, right=None):
+        """Tạo một nút của cây Huffman.
+
+        byte_value là giá trị byte ở nút lá; nút cha dùng None.
+        frequency là số lần xuất hiện; left và right là hai nút con.
+        Python tự gọi hàm này khi viết HuffmanNode(...)."""
         self.byte_value = byte_value
         self.frequency = frequency
         self.left = left
         self.right = right
 
     def is_leaf(self):
+        """Trả về True nếu nút không có con trái và con phải.
+
+        Nút lá chứa byte cần xuất ra khi giải nén."""
         # Nút lá không có con trái và con phải.
         return self.left is None and self.right is None
 
     def __lt__(self, other):
+        """So sánh tần suất của nút hiện tại với nút other.
+
+        Trả về True khi nút hiện tại có tần suất nhỏ hơn.
+        heapq dùng phép so sánh này để chọn hai nút nhỏ nhất."""
         # heapq dùng phép so sánh này để lấy nút có tần suất nhỏ nhất.
         return self.frequency < other.frequency
 
@@ -34,7 +46,10 @@ class HuffmanCompressor:
     algorithm_id = HUFFMAN_ID
 
     def calculate_statistics(self, original_size, compressed_size):
-        """Tính phần trăm dung lượng giảm được; số âm nghĩa là file lớn hơn."""
+        """Tính kết quả thống kê từ kích thước gốc và kích thước nén (byte).
+
+        Trả về dictionary gồm hai kích thước, phần trăm giảm và tên thuật toán.
+        File rỗng dùng tỷ lệ 0 để tránh chia cho 0; tỷ lệ âm là file nén lớn hơn."""
         compression_ratio = 0.0
         if original_size > 0:
             saved_size = original_size - compressed_size
@@ -48,7 +63,10 @@ class HuffmanCompressor:
         }
 
     def count_frequency(self, data):
-        """Bước 1: đếm số lần mỗi byte xuất hiện."""
+        """Đếm số lần xuất hiện của mỗi byte trong data.
+
+        Đầu vào: dữ liệu bytes. Đầu ra: dictionary {giá trị byte: số lần}.
+        Ví dụ b'AAAB' cho kết quả {65: 3, 66: 1}."""
         frequency = {}
         for byte_value in data:
             if byte_value not in frequency:
@@ -57,7 +75,11 @@ class HuffmanCompressor:
         return frequency
 
     def build_tree(self, frequency):
-        """Bước 2: liên tục ghép hai cây có tần suất nhỏ nhất."""
+        """Xây cây Huffman từ bảng tần suất và trả về nút gốc.
+
+        Đưa các nút lá vào min heap, lấy hai nút nhỏ nhất ghép thành nút cha,
+        rồi đưa nút cha lại vào heap. Lặp đến khi chỉ còn một cây.
+        Bảng rỗng trả về None; một loại byte được đặt bên trái gốc để có mã 0."""
         if not frequency:
             return None
         # Giữ thứ tự trong bảng tần suất để đọc được file của phiên bản cũ.
@@ -85,14 +107,21 @@ class HuffmanCompressor:
         return root
 
     def build_codes(self, root):
-        """Bước 3: đi trái thêm '0', đi phải thêm '1'; đến lá thì lưu mã."""
+        """Tạo dictionary {giá trị byte: chuỗi mã Huffman} từ nút gốc.
+
+        Gọi traverse_tree để duyệt cây và điền bảng mã.
+        Cây rỗng trả về dictionary rỗng."""
         codes = {}
         if root is not None:
             self.traverse_tree(root, "", codes)
         return codes
 
     def traverse_tree(self, node, current_code, codes):
-        """Duyệt đệ quy: current_code là đường đi từ gốc đến nút đang xét."""
+        """Duyệt cây đệ quy và ghi mã của các nút lá vào dictionary codes.
+
+        node là nút đang xét; current_code là chuỗi đường đi từ gốc.
+        Đi trái nối 0, đi phải nối 1. Đến lá thì lưu mã và quay lui.
+        Hàm sửa trực tiếp codes được truyền vào, không trả về bảng mới."""
         if node.is_leaf():
             codes[node.byte_value] = current_code
             return
@@ -106,7 +135,11 @@ class HuffmanCompressor:
             self.traverse_tree(node.right, right_code, codes)
 
     def encode_data(self, data, codes):
-        """Bước 4: thay mỗi byte bằng mã Huffman, rồi chia thành nhóm 8 bit."""
+        """Đổi dữ liệu gốc thành các byte nén dựa trên bảng codes.
+
+        Ghép mã Huffman của từng byte, thêm số 0 cho đủ nhóm 8 bit,
+        rồi đổi từng nhóm sang một byte bằng int(nhóm_bit, 2).
+        Trả về (dữ liệu nén bytes, số bit đệm từ 0 đến 7), chưa có header."""
         code_list = []
         for byte_value in data:
             huffman_code = codes[byte_value]
@@ -130,7 +163,12 @@ class HuffmanCompressor:
         return bytes(compressed_bytes), padding
 
     def decode_data(self, payload, root, original_size, padding):
-        """Giải nén: đọc từng bit, đến nút lá thì lấy byte và quay lại gốc."""
+        """Khôi phục bytes gốc từ payload bằng cách duyệt cây root.
+
+        payload chỉ chứa dữ liệu nén, không gồm header và bảng tần suất.
+        Đổi từng byte thành 8 bit, bỏ padding bit cuối rồi duyệt cây.
+        Gặp lá thì lấy byte và quay lại gốc. original_size là số byte cần có.
+        Trả về dữ liệu gốc; báo ValueError nếu đường đi hoặc số byte sai."""
         # '08b' chuyển một byte thành đúng 8 ký tự, kể cả các số 0 ở đầu.
         bit_groups = []
         for byte_value in payload:
@@ -165,13 +203,19 @@ class HuffmanCompressor:
     # Khi học thuật toán, đọc count_frequency đến decode_data trước.
 
     def serialize_codebook(self, frequency):
-        """Đổi bảng tần suất sang JSON rồi sang bytes để lưu trong file."""
+        """Chuyển dictionary tần suất thành JSON dạng bytes để lưu file.
+
+        Khóa số nguyên được JSON ghi thành chuỗi. Không thêm khoảng trắng
+        để bảng chiếm ít dung lượng. Hàm không tự ghi file xuống ổ đĩa."""
         json_text = json.dumps(frequency, separators=(",", ":"))
         codebook_bytes = json_text.encode("utf-8")
         return codebook_bytes
 
     def check_duplicate_keys(self, pairs):
-        """JSON gọi hàm này với các cặp (khóa, giá trị) đọc được."""
+        """Tạo dictionary từ danh sách cặp khóa, giá trị do json.loads đưa vào.
+
+        Báo ValueError nếu một khóa xuất hiện hai lần; nếu hợp lệ thì trả dictionary.
+        Được dùng làm object_pairs_hook để JSON không bỏ qua khóa trùng."""
         result = {}
         for key, value in pairs:
             if key in result:
@@ -180,7 +224,11 @@ class HuffmanCompressor:
         return result
 
     def deserialize_codebook(self, data):
-        """Đọc bảng tần suất từ file; từ chối dữ liệu không hợp lệ."""
+        """Đọc bytes JSON và trả về bảng tần suất với khóa byte dạng số nguyên.
+
+        Kiểm tra kiểu dictionary, tối đa 256 byte, khóa không trùng,
+        giá trị byte 0..255 và tần suất nguyên dương nằm trong giới hạn.
+        Báo ValueError khi codebook sai định dạng hoặc không hợp lệ."""
         try:
             json_text = data.decode("utf-8")
             # Hook giúp phát hiện khóa trùng thay vì âm thầm ghi đè giá trị.
@@ -208,7 +256,11 @@ class HuffmanCompressor:
             raise ValueError("Codebook Huffman không hợp lệ.") from exc
 
     def compress_data(self, input_bytes):
-        """Thực hiện lần lượt các bước Huffman và lưu thông tin để giải nén."""
+        """Thực hiện toàn bộ quá trình nén một dữ liệu bytes.
+
+        Đếm tần suất -> xây cây -> tạo mã -> mã hóa -> ghép header và codebook.
+        Trả về (bytes của file nén hoàn chỉnh, dictionary thống kê).
+        API hoặc chương trình chạy thử chịu trách nhiệm nhận/lưu file."""
         frequency = self.count_frequency(input_bytes)
         root = self.build_tree(frequency)
         codes = self.build_codes(root)
@@ -222,7 +274,11 @@ class HuffmanCompressor:
         return compressed, stats
 
     def read_compressed_file(self, input_bytes):
-        """Đọc và kiểm tra định dạng file; không thực hiện thuật toán giải mã."""
+        """Tách các thành phần và kiểm tra cấu trúc file nén input_bytes.
+
+        Kiểm tra header, mã thuật toán, codebook, tổng tần suất và file rỗng.
+        Trả về (bảng tần suất, payload, kích thước gốc, số bit đệm).
+        Chưa giải mã payload; báo ValueError khi cấu trúc không hợp lệ."""
         header = unpack_header(input_bytes)
         if header["algorithm_id"] != self.algorithm_id:
             raise ValueError("File không dùng thuật toán Huffman.")
@@ -244,7 +300,10 @@ class HuffmanCompressor:
         return frequency, payload, size, padding
 
     def validate_payload(self, payload, codes, frequency, padding):
-        """Kiểm tra độ dài và padding trước khi duyệt cây."""
+        """Kiểm tra độ dài bit và các bit đệm của payload trước khi giải mã.
+
+        Dùng codes và frequency để tính số bit dữ liệu phải có.
+        Các bit đệm cuối phải bằng 0. Không trả dữ liệu; báo ValueError nếu sai."""
         expected_bits = 0
         for byte_value, count in frequency.items():
             expected_bits += count * len(codes[byte_value])
@@ -257,7 +316,11 @@ class HuffmanCompressor:
                 raise ValueError("Các bit padding phải bằng 0.")
 
     def decompress_data(self, input_bytes):
-        """Đọc bảng tần suất, xây lại cây và giải mã dữ liệu."""
+        """Giải nén bytes của một file Huffman hoàn chỉnh thành bytes gốc.
+
+        Đọc các thành phần, dựng lại cây từ tần suất, kiểm tra và giải mã payload.
+        So sánh tần suất sau giải nén với codebook; báo ValueError nếu không khớp.
+        Kiểm tra này không thay thế checksum, nên chưa phát hiện mọi cách sửa file."""
         frequency, payload, original_size, padding = self.read_compressed_file(input_bytes)
         if original_size == 0:
             return b""

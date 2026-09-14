@@ -19,7 +19,11 @@ HEADER_FORMAT = ">2s B I I B"
 
 
 def pack_header(algorithm_id, original_size, codebook_size, padding_bits):
-    """Ghi các thông tin đầu file thành 12 byte."""
+    """Đóng gói thông tin thành header 12 byte và trả về bytes.
+
+    algorithm_id là mã thuật toán; original_size và codebook_size tính bằng byte;
+    padding_bits là số bit đệm. struct.pack ghi theo thứ tự HEADER_FORMAT.
+    Hàm chỉ tạo header, không ghép dữ liệu nén và không ghi ra ổ đĩa."""
     header = struct.pack(
         HEADER_FORMAT,
         MAGIC_BYTES,
@@ -32,7 +36,11 @@ def pack_header(algorithm_id, original_size, codebook_size, padding_bits):
 
 
 def unpack_header(data):
-    """Đọc 12 byte đầu và trả về dictionary thông tin file."""
+    """Đọc 12 byte đầu của data và trả dictionary các trường header.
+
+    Báo ValueError nếu thiếu header hoặc không có dấu nhận diện SK.
+    Mã thuật toán lạ được đặt tên unknown để phần gọi kiểm tra tiếp.
+    Hàm chưa kiểm tra bảng tần suất và phần dữ liệu nén."""
     if len(data) < HEADER_SIZE:
         raise ValueError("File quá nhỏ, cần ít nhất 12 byte header.")
 

@@ -1,9 +1,15 @@
-"""Tạo dữ liệu mẫu khi chạy trực tiếp file này."""
+"""Tạo văn bản mẫu để thử Huffman: python Test/create_sample.py.
+
+Ghi hoặc ghi đè data/sample.txt; đường dẫn tính từ vị trí dự án."""
 
 import os
 
 
 def main():
+    """Tạo thư mục data nếu thiếu và ghi văn bản mẫu vào data/sample.txt.
+
+    File mẫu có sẵn sẽ bị ghi đè khi chạy hàm này. In đường dẫn và kích thước.
+    Không nhận tham số và không trả dữ liệu."""
     script_path = os.path.abspath(__file__)
     script_directory = os.path.dirname(script_path)
     project_directory = os.path.dirname(script_directory)

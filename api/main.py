@@ -35,7 +35,10 @@ app = FastAPI(
 
 
 def safe_filename(filename, default_name):
-    """Tạo tên file phù hợp để đặt trong header tải xuống."""
+    """Làm sạch tên file trước khi đưa vào header tải xuống.
+
+    Nhận tên người dùng gửi lên và tên mặc định; trả tên ASCII đã bỏ
+    hoặc thay ký tự đặc biệt. Dùng tên mặc định nếu kết quả rỗng."""
     if not filename:
         filename = default_name
 
@@ -53,7 +56,10 @@ def safe_filename(filename, default_name):
 
 
 def read_uploaded_file(file, size_limit):
-    """Đọc nội dung file; trả lỗi HTTP 413 nếu vượt giới hạn."""
+    """Đọc UploadFile và trả nội dung bytes trong giới hạn size_limit.
+
+    Đọc tối đa giới hạn cộng 1 byte để phát hiện vượt mức, rồi đóng file tạm.
+    Báo HTTP 413 nếu file quá lớn. Không ghi dữ liệu vào thư mục dự án."""
     try:
         # Đọc thêm 1 byte để biết file có vượt giới hạn hay không.
         file_data = file.file.read(size_limit + 1)
@@ -70,7 +76,10 @@ def read_uploaded_file(file, size_limit):
 
 
 def validate_restored_size(compressed_data):
-    """Kiểm tra kích thước gốc trong header trước khi cấp bộ nhớ giải nén."""
+    """Kiểm tra kích thước gốc trong header của compressed_data.
+
+    Không trả dữ liệu. Báo HTTP 413 nếu kích thước vượt MAX_FILE_SIZE;
+    header không hợp lệ có thể gây ValueError từ unpack_header."""
     header = unpack_header(compressed_data)
     if header["original_size"] > MAX_FILE_SIZE:
         raise HTTPException(
@@ -80,7 +89,10 @@ def validate_restored_size(compressed_data):
 
 
 def restored_filename(uploaded_name):
-    """Ví dụ: baocao.txt.huff -> baocao.txt."""
+    """Tạo tên tải xuống từ tên file nén người dùng gửi.
+
+    Bỏ đuôi .huff, ví dụ baocao.txt.huff thành baocao.txt.
+    Nếu không có đuôi này thì thêm .restored vì header không lưu tên gốc."""
     filename = safe_filename(uploaded_name, "file.huff")
     if filename.lower().endswith(".huff"):
         return filename[:-5]
@@ -89,7 +101,10 @@ def restored_filename(uploaded_name):
 
 
 def download_response(file_data, filename, stats=None):
-    """Đặt dữ liệu vào body và tên file, thống kê vào HTTP headers."""
+    """Tạo phản hồi tải file từ file_data (bytes) và filename (tên đã làm sạch).
+
+    Trả Response có body là dữ liệu nhị phân và header đặt tên tải xuống.
+    Nếu có stats, thêm các header X-... để giao diện đọc số liệu nén."""
     headers = {
         "Content-Disposition": f'attachment; filename="{filename}"',
     }
@@ -109,13 +124,18 @@ def download_response(file_data, filename, stats=None):
 
 @app.get("/health")
 def health_check():
-    """Cho giao diện biết server đang hoạt động."""
+    """Xử lý GET /health để kiểm tra API đang hoạt động.
+
+    Trả dictionary trạng thái và danh sách thuật toán; FastAPI đổi thành JSON."""
     return {"status": "ok", "algorithms": list_algorithms()}
 
 
 @app.post("/api/compress")
 def compress_file(file: UploadFile):
-    """Nhận file -> đọc dữ liệu -> nén Huffman -> trả file .huff."""
+    """Xử lý POST /api/compress: nhận file upload và trả file .huff.
+
+    Đọc file, gọi Huffman, đặt tên kết quả và gửi thống kê qua headers.
+    File quá lớn trả HTTP 413; giới hạn số tác vụ giúp kiểm soát RAM."""
     # FastAPI tự chạy hàm def trong thread, nên không cần async/await ở đây.
     # with tự trả chỗ xử lý khi kết thúc, kể cả khi có lỗi.
     with processing_slots:
@@ -135,7 +155,10 @@ def compress_file(file: UploadFile):
 
 @app.post("/api/decompress")
 def decompress_file(file: UploadFile):
-    """Nhận file nén -> kiểm tra -> giải nén Huffman -> trả dữ liệu gốc."""
+    """Xử lý POST /api/decompress: nhận file nén và trả dữ liệu gốc.
+
+    Đọc file, kiểm tra kích thước gốc rồi gọi Huffman giải nén.
+    Trả Response tải file; lỗi định dạng trả 400, vượt dung lượng trả 413."""
     with processing_slots:
         # 1. Đọc file nén.
         compressed_data = read_uploaded_file(file, MAX_COMPRESSED_SIZE)
