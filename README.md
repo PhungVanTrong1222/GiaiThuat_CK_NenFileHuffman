@@ -31,6 +31,23 @@ $env:PYTHONIOENCODING="utf-8"
 python -m core.benchmark
 ```
 
+## Chạy API
+
+Cài các thư viện và khởi động server:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m uvicorn api.main:app --reload
+```
+
+Mở `http://127.0.0.1:8000/docs` để thử API trên Swagger UI.
+
+- `POST /api/compress`: nhận file và trả về file `.huff`.
+- `POST /api/decompress`: nhận file `.huff` và trả về file gốc.
+- `GET /health`: kiểm tra trạng thái API.
+
+Kích thước file tải lên tối đa là 25 MB.
+
 ## Thử với một file
 
 Không truyền tham số thì chương trình dùng `data/sample.txt`:
@@ -44,7 +61,6 @@ Hai file sinh ra `data/output.bin` và `data/restored.txt` được bỏ qua b�
 
 ## Hướng phát triển tiếp theo
 
-1. Xây dựng API nén/giải nén bằng FastAPI.
-2. Xây dựng giao diện upload và tải file bằng Streamlit.
-3. Bổ sung checksum để phát hiện file nén bị sửa đổi.
-4. Đo thời gian và bộ nhớ với các file 1 MB, 5 MB và 50 MB.
+1. Xây dựng giao diện upload và tải file bằng Streamlit.
+2. Bổ sung checksum để phát hiện file nén bị sửa đổi.
+3. Đo thời gian và bộ nhớ với các file 1 MB, 5 MB và 25 MB.
