@@ -51,8 +51,8 @@ Cài các thư viện và khởi động server:
 
 Mở `http://127.0.0.1:8000/docs` để thử API trên Swagger UI.
 
-- `POST /api/compress`: nhận file và trả về file `.huff`.
-- `POST /api/decompress`: nhận file `.huff` và trả về file gốc.
+- `POST /api/compress`: nhận file và trả về file `.bin`.
+- `POST /api/decompress`: nhận file `.bin` và trả về file gốc.
 - `GET /health`: kiểm tra trạng thái API.
 
 File gốc và dữ liệu sau giải nén tối đa 25 MiB (26.214.400 byte).
@@ -74,8 +74,8 @@ Không truyền tham số thì chương trình dùng `data/sample.txt`:
 .\.venv\Scripts\python.exe Test/main.py "D:\duong-dan\file.log"
 ```
 
-Hai file sinh ra `data/output.huff` và `data/restored.txt` được bỏ qua bởi Git.
-Các file `.bin` cũ vẫn đọc được vì định dạng bên trong không đổi.
+Hai file sinh ra `data/output.bin` và `data/restored.txt` được bỏ qua bởi Git.
+Các file `.huff` đã tạo trước đây vẫn đọc được vì định dạng bên trong không đổi.
 
 File nén được kiểm tra header, codebook, số bit, padding và tần suất sau giải nén.
 Chưa có checksum nên không phát hiện được mọi thay đổi giữ nguyên tần suất byte.

@@ -91,12 +91,15 @@ def validate_restored_size(compressed_data):
 def restored_filename(uploaded_name):
     """Tạo tên tải xuống từ tên file nén người dùng gửi.
 
-    Bỏ đuôi .huff, ví dụ baocao.txt.huff thành baocao.txt.
+    Bỏ đuôi .bin, ví dụ baocao.txt.bin thành baocao.txt.
     Nếu không có đuôi này thì thêm .restored vì header không lưu tên gốc."""
-    filename = safe_filename(uploaded_name, "file.huff")
+    filename = safe_filename(uploaded_name, "file.bin")
+    if filename.lower().endswith(".bin"):
+        return filename[:-4]
+    # Tiếp tục nhận các file .huff đã tạo ở phiên bản trước.
     if filename.lower().endswith(".huff"):
         return filename[:-5]
-    # File cũ có thể dùng đuôi .bin và không lưu tên gốc trong header.
+    # Header không lưu tên gốc nên dùng tên dự phòng cho đuôi khác.
     return filename + ".restored"
 
 
@@ -132,7 +135,7 @@ def health_check():
 
 @app.post("/api/compress")
 def compress_file(file: UploadFile):
-    """Xử lý POST /api/compress: nhận file upload và trả file .huff.
+    """Xử lý POST /api/compress: nhận file upload và trả file .bin.
 
     Đọc file, gọi Huffman, đặt tên kết quả và gửi thống kê qua headers.
     File quá lớn trả HTTP 413; giới hạn số tác vụ giúp kiểm soát RAM."""
@@ -148,7 +151,7 @@ def compress_file(file: UploadFile):
 
     # 3. Đặt tên file và gửi kết quả về trình duyệt.
     original_name = safe_filename(file.filename, "file")
-    filename = original_name + ".huff"
+    filename = original_name + ".bin"
     response = download_response(compressed_data, filename, stats)
     return response
 

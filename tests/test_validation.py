@@ -77,8 +77,8 @@ class ApiValidationTests(unittest.TestCase):
         self.addCleanup(self.context.__exit__, None, None, None)
 
     def post(self, endpoint, data):
-        """Gửi data dưới dạng file test.huff đến endpoint và trả phản hồi HTTP."""
-        uploaded_file = ("test.huff", data)
+        """Gửi data dưới dạng file test.bin đến endpoint và trả phản hồi HTTP."""
+        uploaded_file = ("test.bin", data)
         form_files = {"file": uploaded_file}
         response = self.client.post(endpoint, files=form_files)
         return response

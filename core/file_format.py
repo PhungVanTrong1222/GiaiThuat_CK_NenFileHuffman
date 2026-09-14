@@ -6,7 +6,7 @@ Header gồm:
 - 4 byte kích thước gốc.
 - 4 byte kích thước bảng tần suất.
 - 1 byte số bit đệm.
-Giữ nguyên cấu trúc này để đọc được file .huff và .bin đã tạo trước đây.
+Giữ nguyên cấu trúc này để đọc được file .bin và .huff đã tạo trước đây.
 """
 
 import struct

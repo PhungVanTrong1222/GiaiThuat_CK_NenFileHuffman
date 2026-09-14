@@ -1,6 +1,6 @@
 """Chạy thử Huffman với file thật: python Test/main.py [đường_dẫn_file].
 
-Mặc định đọc data/sample.txt, ghi output.huff và restored.txt trong data/,
+Mặc định đọc data/sample.txt, ghi output.bin và restored.txt trong data/,
 rồi so sánh với dữ liệu gốc. Chỉ chạy trực tiếp, không chạy khi import."""
 
 import argparse
@@ -16,14 +16,14 @@ sys.path.insert(0, PROJECT_DIR)
 from core import get_compressor
 
 DEFAULT_INPUT = os.path.join(PROJECT_DIR, "data", "sample.txt")
-COMPRESSED_FILE = os.path.join(PROJECT_DIR, "data", "output.huff")
+COMPRESSED_FILE = os.path.join(PROJECT_DIR, "data", "output.bin")
 DECOMPRESSED_FILE = os.path.join(PROJECT_DIR, "data", "restored.txt")
 
 def main():
     """Đọc đường dẫn từ dòng lệnh và chạy thử nén, giải nén trên một file.
 
     Không truyền đường dẫn thì dùng data/sample.txt. Ghi kết quả vào
-    output.huff và restored.txt trong data/, thay thế file kết quả nếu đã có.
+    output.bin và restored.txt trong data/, thay thế file kết quả nếu đã có.
     In dung lượng, tỷ lệ nén và kết quả so sánh; không trả dữ liệu."""
     parser = argparse.ArgumentParser(description="Kiểm tra nén và giải nén Huffman.")
     parser.add_argument(

@@ -47,7 +47,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(compressed.headers["x-original-size"], str(len(original)))
         self.assertEqual(compressed.headers["x-compression-algorithm"], "huffman")
         self.assertIn(
-            'filename="dulieu.txt.huff"',
+            'filename="dulieu.txt.bin"',
             compressed.headers["content-disposition"],
         )
 
@@ -55,7 +55,7 @@ class ApiTests(unittest.TestCase):
             "/api/decompress",
             files={
                 "file": (
-                    "dulieu.txt.huff",
+                    "dulieu.txt.bin",
                     compressed.content,
                     "application/octet-stream",
                 )
@@ -79,7 +79,7 @@ class ApiTests(unittest.TestCase):
             "/api/decompress",
             files={
                 "file": (
-                    "empty.txt.huff",
+                    "empty.txt.bin",
                     compressed.content,
                     "application/octet-stream",
                 )
@@ -96,7 +96,7 @@ class ApiTests(unittest.TestCase):
             "/api/decompress",
             files={
                 "file": (
-                    "invalid.huff",
+                    "invalid.bin",
                     b"invalid-data",
                     "application/octet-stream",
                 )
