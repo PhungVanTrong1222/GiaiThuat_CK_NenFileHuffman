@@ -150,10 +150,8 @@ Header 12 byte:
 | `GET /health` | Kiểm tra API đang hoạt động |
 | `GET /api/config` | Lấy giới hạn dung lượng |
 
-Mở **http://127.0.0.1:8000/docs** để thử API trên Swagger UI.
 
-**Giới hạn:** File tối đa 25 MB. API trả mã lỗi 400 (file hỏng),
-413 (vượt giới hạn), 422 (thiếu file).
+API trả mã lỗi 400 (file hỏng), 413 (vượt giới hạn), 422 (thiếu file).
 
 ---
 
