@@ -1,34 +1,64 @@
-# ShrinkIT
+# ShrinkIT — Nén file bằng Huffman Coding
 
-ShrinkIT là dự án cuối kỳ minh họa thuật toán nén dữ liệu không mất mát
-bằng **Huffman Coding**. Phần lõi nhận dữ liệu dạng `bytes`, tạo file nén
-có header riêng và khôi phục lại chính xác dữ liệu ban đầu.
+Đồ án cuối kỳ môn **Phân tích Thiết kế Giải thuật**.
 
-## Cấu trúc hiện tại
+ShrinkIT nén file văn bản (`.txt`, `.csv`, `.log`, `.json`) bằng thuật toán Huffman Coding
+và khôi phục lại chính xác dữ liệu ban đầu (nén không mất mát).
 
-```text
+---
+
+## Cấu trúc dự án
+
+```
 ShrinkIT/
-├── core/               # Cài đặt thuật toán Huffman và định dạng file
-├── api/                # API nén và giải nén
-├── web/                # Giao diện HTML, CSS và JavaScript
-├── data/               # Dữ liệu mẫu
-├── doc/                # Ý tưởng và kế hoạch dự án
-├── Test/               # Chương trình thử thủ công với một file
-└── tests/              # Kiểm thử tự động
+├── core/               # Thuật toán Huffman + định dạng file nén
+│   ├── huffman.py      # Toàn bộ logic nén/giải nén
+│   ├── file_format.py  # Đọc/ghi header 12 byte
+│   ├── benchmark.py    # Đo hiệu suất trên nhiều loại dữ liệu
+│   └── __init__.py     # Hàm khởi tạo compressor
+│
+├── api/                # Backend API (FastAPI)
+│   └── main.py         # Nhận file, gọi Huffman, trả kết quả
+│
+├── web/                # Giao diện người dùng
+│   ├── index.html      # Bố cục trang
+│   ├── style.css       # Giao diện
+│   └── script.js       # Gọi API, hiển thị kết quả
+│
+├── tests/              # 26 bài kiểm thử tự động
+├── Test/               # Chạy thử nhanh với 1 file
+├── data/               # File mẫu để test
+├── doc/                # Tài liệu kế hoạch, phân công
+└── requirements.txt    # Thư viện cần cài
 ```
 
-## Chạy kiểm thử
+---
 
-Chuẩn bị môi trường (Python 3.13):
+## Cài đặt
+
+Cần Python 3.10 trở lên. Từ thư mục gốc của dự án:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-Các lệnh dưới dùng Python trong môi trường riêng, không cần kích hoạt PowerShell.
+---
 
-Từ thư mục gốc của dự án:
+## Chạy ứng dụng web
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn api.main:app --reload
+```
+
+Mở trình duyệt tại **http://127.0.0.1:8000/**
+
+> **Lưu ý:** Không mở trực tiếp file `index.html` bằng cách nhấp đúp —
+> giao diện cần gọi API nên phải chạy qua server.
+
+---
+
+## Chạy kiểm thử
 
 ```powershell
 $env:PYTHONIOENCODING="utf-8"
@@ -42,132 +72,106 @@ $env:PYTHONIOENCODING="utf-8"
 .\.venv\Scripts\python.exe -m core.benchmark
 ```
 
-## Chạy giao diện web và API
-
-Cài các thư viện và khởi động server:
-
-```powershell
-.\.venv\Scripts\python.exe -m uvicorn api.main:app --reload
-```
-
-Mở `http://127.0.0.1:8000/` để dùng giao diện web. Chỉ cần chạy một server.
-Không mở trực tiếp file HTML bằng cách nhấp đúp vì giao diện cần gọi API.
-Mở `http://127.0.0.1:8000/docs` nếu muốn thử API riêng trên Swagger UI.
-
-- `POST /api/compress`: nhận file và trả về file `.bin`.
-- `POST /api/decompress`: nhận file `.bin` và trả về file gốc.
-- `GET /health`: kiểm tra trạng thái API.
-- `GET /api/config`: lấy giới hạn file để giao diện hiển thị và kiểm tra.
-
-## Đọc phần giao diện
-
-- `web/index.html`: bố cục trang, vùng chọn file, nút thao tác và vùng kết quả.
-- `web/style.css`: màu sắc, kích thước, bố cục máy tính và điện thoại.
-- `web/script.js`: nhận file, gọi API và hiển thị phản hồi.
-
-Trong JavaScript, đọc `selectFile` → `submitFile` → `showResult`.
-`FormData` chứa file gửi lên, `fetch` gọi API, `Blob` chứa file trả về.
-`URL.createObjectURL` tạo đường dẫn tải xuống trong trình duyệt; khi đổi file,
-`clearResult` thu hồi đường dẫn cũ để giải phóng bộ nhớ.
-
-Nút Nén/Giải nén bị khóa trong lúc xử lý để tránh gửi nhầm dữ liệu.
-Tổng thời gian chờ tính từ lúc gửi yêu cầu đến khi nhận hết file, bao gồm
-truyền dữ liệu và chờ server, không phải chỉ thời gian chạy thuật toán.
-Số phần trăm âm nghĩa là file nén lớn hơn bản gốc; file nhỏ hoặc đã nén có thể gặp.
-
-File gốc và dữ liệu sau giải nén tối đa 25 MiB (26.214.400 byte).
-File nén được thêm 8.204 byte cho header và codebook, vì nén có thể làm file lớn hơn.
-API trả 400 với file hỏng, 413 khi vượt giới hạn và 422 khi thiếu file.
-Giới hạn này kiểm tra nội dung file sau khi framework đọc multipart; khi triển khai
-public cần giới hạn request body tại reverse proxy.
-
-Mỗi worker xử lý tối đa hai tác vụ nén/giải nén cùng lúc trong thread.
-Thread giúp tránh chạy thuật toán trực tiếp trên event loop; không làm Python
-nén nhanh hơn bằng nhiều lõi CPU.
-
-## Thử với một file
-
-Không truyền tham số thì chương trình dùng `data/sample.txt`:
+## Thử nhanh với 1 file
 
 ```powershell
 .\.venv\Scripts\python.exe Test/main.py
-.\.venv\Scripts\python.exe Test/main.py "D:\duong-dan\file.log"
+.\.venv\Scripts\python.exe Test/main.py "D:\duong-dan\file.txt"
 ```
 
-Hai file sinh ra `data/output.bin` và `data/restored.txt` được bỏ qua bởi Git.
-Các file `.huff` đã tạo trước đây vẫn đọc được vì định dạng bên trong không đổi.
+---
 
-File nén được kiểm tra header, codebook, số bit, padding và tần suất sau giải nén.
-Chưa có checksum nên không phát hiện được mọi thay đổi giữ nguyên tần suất byte.
+## Thuật toán Huffman — Tóm tắt
 
+**Ý tưởng:** Byte xuất hiện nhiều → gán mã ngắn. Byte xuất hiện ít → gán mã dài.
+Kết quả: tổng số bit ít hơn → file nhỏ hơn.
 
-## Đọc phần API
+### Quy trình nén (trong `core/huffman.py`)
 
-Trong `api/main.py`, bắt đầu từ `compress_file` và `decompress_file` ở cuối file.
-Mỗi hàm tương ứng với một địa chỉ API và thực hiện lần lượt:
+| Bước | Hàm | Mô tả | Độ phức tạp |
+|------|-----|-------|-------------|
+| 1 | `count_frequency()` | Đếm mỗi byte xuất hiện bao nhiêu lần | O(n) |
+| 2 | `build_tree()` | Xây cây Huffman bằng Min Heap | O(k log k) |
+| 3 | `build_codes()` | Duyệt cây: trái = "0", phải = "1" | O(k) |
+| 4 | `encode_data()` | Thay byte bằng mã bit → ghép → chuyển thành bytes | O(n) |
 
-1. Nhận file do trình duyệt gửi lên bằng trường `file` trong form.
-2. Gọi `read_uploaded_file` để đọc dữ liệu và kiểm tra giới hạn.
-3. Gọi thuật toán Huffman để nén hoặc giải nén.
-4. Gọi `download_response` để trả dữ liệu và tên file tải xuống.
+> n = số byte đầu vào, k = số loại byte riêng biệt (k ≤ 256)
+> → Tổng: **O(n)** — tuyến tính theo kích thước file
 
-API chỉ phụ trách nhận/trả file; thuật toán nằm trong thư mục `core/`.
-`UploadFile` là file nhận từ người dùng, còn `Response` là phản hồi gửi về.
-Body của phản hồi chứa dữ liệu nhị phân. Header `Content-Disposition` đặt tên
-file tải xuống; các header `X-...` chứa số liệu để giao diện hiển thị.
+### Quy trình giải nén
 
-Các endpoint dùng hàm `def` thông thường. FastAPI tự chạy chúng trong thread.
-Vì vậy bên trong hàm có thể đọc file và gọi Huffman theo thứ tự, không dùng
-`async/await`. Tham số `file: UploadFile` cho FastAPI biết cần nhận một file upload.
+1. Đọc bảng tần suất từ file nén → xây lại cây Huffman.
+2. `decode_data()` — Đọc từng bit, đi theo cây, đến lá thì lấy byte gốc.
 
-`processing_slots` giống hai chỗ làm việc, chỉ cho hai tác vụ xử lý đồng thời.
-`with processing_slots` chờ một chỗ trống và tự trả chỗ khi xong hoặc gặp lỗi.
-Đây là phần giới hạn sử dụng RAM, không thuộc thuật toán Huffman.
+### Ví dụ đơn giản
 
-Muốn đổi giới hạn, sửa `MAX_FILE_SIZE` ở đầu file rồi khởi động lại API.
-Thông báo dung lượng được tính từ cấu hình, không ghi cố định trong từng hàm.
+```
+Dữ liệu: "AAAB" → A xuất hiện 3 lần, B xuất hiện 1 lần.
 
-## Đọc phần thuật toán
+Cây Huffman:       Bảng mã:
+      gốc            A → "1"  (ngắn vì xuất hiện nhiều)
+     /    \           B → "00" (dài vì xuất hiện ít)
+   (2)    A(3)
+  /   \
+B(1)  ...
 
-Phần lõi gồm hai file chính:
+Mã hóa: "1" + "1" + "1" + "00" = "11100"
+Thêm padding: "11100" + "000" = "11100000" (1 byte)
+```
 
-- `core/huffman.py`: lớp Huffman độc lập, thực hiện nén, giải nén và tính tỷ lệ nén.
-- `core/file_format.py`: đọc/ghi header 12 byte của file nén.
+---
 
-Không dùng lớp cha hay lớp trừu tượng. `core/__init__.py` chỉ cung cấp các hàm
-gọi Huffman cho API và chương trình chạy thử.
+## Định dạng file nén (`.bin`)
 
-Trong `core/huffman.py`, đọc theo thứ tự:
+File nén gồm 3 phần nối nhau:
 
-1. `count_frequency`: đếm số lần xuất hiện của từng byte.
-2. `build_tree`: lấy hai nút nhỏ nhất trong min heap và ghép thành nút cha.
-3. `build_codes`: duyệt cây, trái là 0 và phải là 1.
-4. `encode_data`: ghép các mã, thêm padding và đổi từng nhóm 8 bit thành byte.
-5. `decode_data`: khôi phục chuỗi bit, bỏ padding, duyệt cây để lấy lại dữ liệu.
+```
+[Header 12 byte] + [Bảng tần suất JSON] + [Dữ liệu đã mã hóa]
+```
 
-Ví dụ với `AAAB`: A có mã 1, B có mã 0. Chuỗi mã là `1110`;
-thêm 4 bit đệm thành `11100000`. Khi giải nén, bỏ 4 bit đệm rồi
-duyệt cây theo `1110` để thu lại `AAAB`.
+Header 12 byte:
 
-Các hàm đọc header và kiểm tra file được tách khỏi các bước thuật toán.
-Cách cài đặt này ưu tiên dễ đọc: chuỗi bit của cả file được giữ trong RAM,
-nên dùng nhiều bộ nhớ hơn phiên bản xử lý bit trực tiếp, đặc biệt với file lớn.
+| Vị trí | Kích thước | Nội dung |
+|--------|-----------|----------|
+| 0-1 | 2 byte | `"SK"` — nhận diện file ShrinkIT |
+| 2 | 1 byte | Mã thuật toán (1 = Huffman) |
+| 3-6 | 4 byte | Kích thước file gốc |
+| 7-10 | 4 byte | Kích thước bảng tần suất |
+| 11 | 1 byte | Số bit đệm (0-7) |
 
-## Hướng phát triển tiếp theo
+---
 
-1. Bổ sung số liệu thực nghiệm và phần minh họa cây Huffman.
-2. Bổ sung checksum để phát hiện file nén bị sửa đổi.
-3. Đo thời gian và bộ nhớ với các file 1 MB, 5 MB và 25 MB.
+## API
 
-## Quy ước viết code
+| Endpoint | Mô tả |
+|----------|-------|
+| `POST /api/compress` | Nhận file → trả file `.bin` đã nén |
+| `POST /api/decompress` | Nhận file `.bin` → trả file gốc |
+| `GET /health` | Kiểm tra API đang hoạt động |
+| `GET /api/config` | Lấy giới hạn dung lượng |
 
-Tên hàm và biến viết đầy đủ, dùng dấu gạch dưới giữa các từ, ví dụ
-`count_frequency`. Không thêm dấu gạch dưới ở đầu tên hàm thông thường.
-`__init__` và `__lt__` giữ nguyên vì Python dùng chúng để khởi tạo và so sánh đối tượng.
+Mở **http://127.0.0.1:8000/docs** để thử API trên Swagger UI.
 
-Ưu tiên vòng lặp, biến trung gian và điều kiện rõ ràng. Chú thích giải thích
-mục đích hoặc phần khó. Các tên `setUp`, `test_...` trong kiểm thử là quy ước
-của unittest để chuẩn bị và tìm các bài kiểm tra.
+**Giới hạn:** File tối đa 25 MB. API trả mã lỗi 400 (file hỏng),
+413 (vượt giới hạn), 422 (thiếu file).
 
-Chương trình chạy thử có hàm `main()`; chỉ chạy khi mở trực tiếp bằng Python.
-Import file để đọc hoặc kiểm thử không tự tạo hay ghi đè dữ liệu mẫu.
+---
+
+## Lưu ý quan trọng
+
+- **Huffman chỉ hiệu quả với file chưa nén** (`.txt`, `.csv`, `.log`, `.json`, `.bmp`).
+- File đã nén sẵn (`.pdf`, `.docx`, `.zip`, `.jpg`, `.mp4`) sẽ bị **lớn hơn** sau khi nén
+  vì dữ liệu bên trong đã có entropy cao + phải thêm header và bảng tần suất.
+- Đây là đặc điểm của thuật toán, không phải lỗi.
+
+---
+
+## Thành viên nhóm
+
+| Vai trò | Nhiệm vụ |
+|---------|----------|
+| TV1 — Trưởng nhóm | Quản lý repo, điều phối, slide thuyết trình |
+| TV2 — Thuật toán | Viết logic Huffman (`core/huffman.py`) |
+| TV3 — Backend | Viết API FastAPI (`api/main.py`) |
+| TV4 — Frontend | Giao diện web (`web/`) |
+| TV5 — QA & Data | Kiểm thử, dữ liệu mẫu, triển khai |
