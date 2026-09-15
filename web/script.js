@@ -49,6 +49,8 @@ function clearResult() {
     var compressedFill = document.getElementById("compressed-bar-fill");
     if (originalFill) { originalFill.style.width = "0%"; }
     if (compressedFill) { compressedFill.style.width = "0%"; }
+    var badge = document.getElementById("chart-saving-badge");
+    if (badge) { badge.textContent = ""; badge.hidden = true; }
 }
 
 // Khóa các thao tác thay đổi đầu vào trong lúc chờ API.
@@ -94,7 +96,7 @@ function selectFile(file) {
         sizeLimit = configuration.max_compressed_size;
     }
     if (file.size > sizeLimit) {
-        showStatus("File vượt giới hạn " + formatSize(sizeLimit) + ".", true);
+        showStatus("Dung lượng file vượt quá giới hạn tối đa cho phép (" + formatSize(sizeLimit) + ").", true);
         return;
     }
     selectedFile = file;
@@ -130,16 +132,15 @@ function changeMode(mode) {
     }
 }
 
-// Hiển thị giới hạn lấy từ Python, không ghi cố định 25 MiB trong JavaScript.
+// Cập nhật hướng dẫn theo chế độ (đúng định dạng dự án hỗ trợ, không ghi cứng số MB).
 function updateFileHint() {
-    if (configuration === null) {
-        return;
+    if (currentMode === "compress") {
+        document.getElementById("file-hint").textContent = "Định dạng hỗ trợ: .txt, .csv, .log, .json";
+        fileInput.accept = ".txt,.csv,.log,.json";
+    } else {
+        document.getElementById("file-hint").textContent = "Định dạng hỗ trợ: .bin (do ShrinkIT tạo)";
+        fileInput.accept = ".bin";
     }
-    let hint = "Mọi loại file · Tối đa " + formatSize(configuration.max_file_size);
-    if (currentMode === "decompress") {
-        hint = "File ShrinkIT .bin (hoặc .huff cũ) · Tối đa " + formatSize(configuration.max_compressed_size);
-    }
-    document.getElementById("file-hint").textContent = hint;
 }
 
 // Lấy cấu hình ứng dụng một lần khi trang mở. Nếu mất kết nối thì chặn upload.
@@ -214,18 +215,35 @@ function showResult(response, resultBlob, elapsedSeconds) {
         sizeChart.hidden = false;
         const originalSize = selectedFile.size;
         const compressedSize = resultBlob.size;
-        const maxSize = Math.max(originalSize, compressedSize);
-        const originalPercent = (originalSize / maxSize) * 100;
-        const compressedPercent = (compressedSize / maxSize) * 100;
+        const maxSize = Math.max(originalSize, compressedSize, 1);
+        const originalPercent = Math.max(Math.round((originalSize / maxSize) * 100), 2);
+        const compressedPercent = Math.max(Math.round((compressedSize / maxSize) * 100), 2);
 
         document.getElementById("chart-original-size").textContent = formatSize(originalSize);
         document.getElementById("chart-compressed-size").textContent = formatSize(compressedSize);
 
-        // Delay nhẹ để animation chạy mượt
+        const savingBadge = document.getElementById("chart-saving-badge");
+        if (savingBadge) {
+            if (ratio > 0) {
+                savingBadge.textContent = "Giảm " + ratio.toFixed(1) + "%";
+                savingBadge.className = "badge-saving saving-good";
+                savingBadge.hidden = false;
+            } else if (ratio < 0) {
+                savingBadge.textContent = "Tăng " + Math.abs(ratio).toFixed(1) + "%";
+                savingBadge.className = "badge-saving saving-warn";
+                savingBadge.hidden = false;
+            } else {
+                savingBadge.hidden = true;
+            }
+        }
+
+        // Delay một nhịp để transition CSS kích hoạt mượt mà
         setTimeout(function () {
-            document.getElementById("original-bar-fill").style.width = originalPercent + "%";
-            document.getElementById("compressed-bar-fill").style.width = compressedPercent + "%";
-        }, 50);
+            var oFill = document.getElementById("original-bar-fill");
+            var cFill = document.getElementById("compressed-bar-fill");
+            if (oFill) { oFill.style.width = originalPercent + "%"; }
+            if (cFill) { cFill.style.width = compressedPercent + "%"; }
+        }, 60);
     } else {
         sizeChart.hidden = true;
         document.getElementById("ratio-label").textContent = "Trạng thái";

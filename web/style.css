@@ -69,7 +69,7 @@ button:disabled {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 100px;
+    height: 68px;
     border-bottom: 1px solid var(--line);
 }
 
@@ -124,7 +124,7 @@ button:disabled {
 /* ===== INTRO ===== */
 
 .intro {
-    padding: 62px 0 38px;
+    padding: 24px 0 28px;
 }
 
 .eyebrow {
@@ -495,46 +495,87 @@ h2 {
 /* ===== BIỂU ĐỒ SO SÁNH DUNG LƯỢNG ===== */
 
 .size-chart {
-    margin-bottom: 20px;
+    margin: 14px 0 20px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 13px;
+    background: #fbf9fe;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid #e3deee;
 }
 
-.chart-bar {
+.chart-item {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.chart-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chart-item-right {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 11px;
-}
-
-.chart-bar .bar-fill {
-    height: 28px;
-    border-radius: 6px;
-    min-width: 8px;
-    transition: width .6s ease;
-}
-
-.original-bar .bar-fill {
-    background: linear-gradient(90deg, #a294e0, #7c6bc4);
-}
-
-.compressed-bar .bar-fill {
-    background: linear-gradient(90deg, #6951ce, #4a38a0);
+    gap: 8px;
 }
 
 .bar-label {
     color: var(--muted);
-    font-size: 10px;
-    white-space: nowrap;
-    min-width: 52px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
 }
 
 .bar-value {
     font-weight: 700;
     color: var(--ink);
-    font-size: 11px;
-    white-space: nowrap;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.badge-saving {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
+}
+
+.badge-saving.saving-good {
+    background: #e8f5ea;
+    color: #2b7a3e;
+}
+
+.badge-saving.saving-warn {
+    background: #fff0e6;
+    color: #c05621;
+}
+
+.chart-track {
+    width: 100%;
+    height: 10px;
+    background: #eae5f2;
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+}
+
+.chart-track .bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    min-width: 6px;
+    transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.original-fill {
+    background: linear-gradient(90deg, #aba0de, #8473c9);
+}
+
+.compressed-fill {
+    background: linear-gradient(90deg, #6951ce, #46349c);
 }
 
 /* ===== METRICS ===== */
@@ -688,11 +729,11 @@ footer {
     }
 
     .site-header {
-        height: 76px;
+        height: 60px;
     }
 
     .intro {
-        padding: 38px 0 28px;
+        padding: 20px 0 20px;
     }
 
     h1 {

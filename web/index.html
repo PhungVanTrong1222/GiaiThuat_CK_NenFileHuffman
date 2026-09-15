@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#f7f6f2">
   <meta name="description" content="ShrinkIT — Nén và giải nén file bằng thuật toán Huffman Coding. Đồ án cuối kỳ môn Phân tích Thiết kế Giải thuật.">
   <title>ShrinkIT — Nén file Huffman</title>
-  <link rel="stylesheet" href="/static/style.css?v=2">
-  <script src="/static/script.js?v=2" defer></script>
+  <link rel="stylesheet" href="/static/style.css?v=5">
+  <script src="/static/script.js?v=4" defer></script>
 </head>
 <body>
 
@@ -50,15 +50,14 @@
         <form id="file-form">
           <div class="section-heading">
             <h2 id="input-title">Chọn file cần nén</h2>
-            <span class="step-label">BƯỚC 01</span>
           </div>
 
           <label class="drop-zone" id="drop-zone" for="file-input">
             <span class="file-icon" aria-hidden="true">↑</span>
             <strong>Kéo thả file vào đây</strong>
             <span>hoặc <span class="browse-text">chọn từ máy của bạn</span></span>
-            <span class="file-hint" id="file-hint">Đang lấy giới hạn dung lượng…</span>
-            <input type="file" id="file-input" aria-label="Chọn file cần xử lý" disabled>
+            <span class="file-hint" id="file-hint">Định dạng hỗ trợ: .txt, .csv, .log, .json</span>
+            <input type="file" id="file-input" accept=".txt,.csv,.log,.json" aria-label="Chọn file cần xử lý" disabled>
           </label>
 
           <div class="selected-file" id="selected-file" hidden>
@@ -82,7 +81,6 @@
       <aside class="result-panel" aria-labelledby="result-title">
         <div class="section-heading">
           <h2 id="result-title">Kết quả của bạn</h2>
-          <span class="step-label">BƯỚC 02</span>
         </div>
 
         <!-- Trạng thái chờ -->
@@ -101,16 +99,27 @@
           <h3 class="result-filename" id="result-filename"></h3>
 
           <!-- Biểu đồ so sánh dung lượng -->
-          <div class="size-chart" id="size-chart">
-            <div class="chart-bar original-bar">
-              <div class="bar-fill" id="original-bar-fill"></div>
-              <span class="bar-label">Trước nén</span>
-              <span class="bar-value" id="chart-original-size"></span>
+          <div class="size-chart" id="size-chart" aria-label="Biểu đồ so sánh dung lượng">
+            <div class="chart-item">
+              <div class="chart-item-header">
+                <span class="bar-label">Trước nén</span>
+                <span class="bar-value" id="chart-original-size">0 B</span>
+              </div>
+              <div class="chart-track">
+                <div class="bar-fill original-fill" id="original-bar-fill" style="width: 0%"></div>
+              </div>
             </div>
-            <div class="chart-bar compressed-bar">
-              <div class="bar-fill" id="compressed-bar-fill"></div>
-              <span class="bar-label">Sau nén</span>
-              <span class="bar-value" id="chart-compressed-size"></span>
+            <div class="chart-item">
+              <div class="chart-item-header">
+                <span class="bar-label">Sau nén</span>
+                <div class="chart-item-right">
+                  <span class="badge-saving" id="chart-saving-badge" hidden></span>
+                  <span class="bar-value" id="chart-compressed-size">0 B</span>
+                </div>
+              </div>
+              <div class="chart-track">
+                <div class="bar-fill compressed-fill" id="compressed-bar-fill" style="width: 0%"></div>
+              </div>
             </div>
           </div>
 
