@@ -44,6 +44,11 @@ function clearResult() {
     downloadLink.removeAttribute("download");
     document.getElementById("result-content").hidden = true;
     document.getElementById("empty-result").hidden = false;
+    // Reset biểu đồ
+    var originalFill = document.getElementById("original-bar-fill");
+    var compressedFill = document.getElementById("compressed-bar-fill");
+    if (originalFill) { originalFill.style.width = "0%"; }
+    if (compressedFill) { compressedFill.style.width = "0%"; }
 }
 
 // Khóa các thao tác thay đổi đầu vào trong lúc chờ API.
@@ -193,8 +198,9 @@ function showResult(response, resultBlob, elapsedSeconds) {
     document.getElementById("output-size").textContent = formatSize(resultBlob.size);
     document.getElementById("elapsed-time").textContent = elapsedSeconds.toFixed(2) + " giây";
 
+    const sizeChart = document.getElementById("size-chart");
+
     if (currentMode === "compress") {
-        // API đã tính tỷ lệ gồm cả header và codebook.
         const ratio = Number(response.headers.get("X-Compression-Ratio"));
         document.getElementById("ratio-label").textContent = "Giảm dung lượng";
         document.getElementById("ratio-value").textContent = ratio.toFixed(2) + "%";
@@ -203,7 +209,25 @@ function showResult(response, resultBlob, elapsedSeconds) {
         } else {
             document.getElementById("result-note").textContent = "File .bin chứa dữ liệu nén và thông tin để giải nén bằng ShrinkIT.";
         }
+
+        // Vẽ biểu đồ so sánh dung lượng
+        sizeChart.hidden = false;
+        const originalSize = selectedFile.size;
+        const compressedSize = resultBlob.size;
+        const maxSize = Math.max(originalSize, compressedSize);
+        const originalPercent = (originalSize / maxSize) * 100;
+        const compressedPercent = (compressedSize / maxSize) * 100;
+
+        document.getElementById("chart-original-size").textContent = formatSize(originalSize);
+        document.getElementById("chart-compressed-size").textContent = formatSize(compressedSize);
+
+        // Delay nhẹ để animation chạy mượt
+        setTimeout(function () {
+            document.getElementById("original-bar-fill").style.width = originalPercent + "%";
+            document.getElementById("compressed-bar-fill").style.width = compressedPercent + "%";
+        }, 50);
     } else {
+        sizeChart.hidden = true;
         document.getElementById("ratio-label").textContent = "Trạng thái";
         document.getElementById("ratio-value").textContent = "Đã giải nén";
         document.getElementById("result-note").textContent = "Dữ liệu đã được khôi phục. Tải file kết quả về máy của bạn.";
