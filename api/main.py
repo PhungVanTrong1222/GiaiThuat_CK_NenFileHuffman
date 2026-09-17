@@ -19,7 +19,7 @@ from core.huffman import HuffmanCompressor
 
 
 # Giới hạn dung lượng tính bằng byte: 1 MiB = 1024 * 1024 byte.
-MAX_FILE_SIZE = 25 * 1024 * 1024
+MAX_FILE_SIZE = 1000 * 1024 * 1024
 MAX_COMPRESSED_SIZE = MAX_FILE_SIZE + HuffmanCompressor.MAX_CODEBOOK_SIZE + HEADER_SIZE
 MAX_CONCURRENT_TASKS = 2
 
